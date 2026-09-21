@@ -1,0 +1,36 @@
+CANTUS DEI - PERFIL GLOBAL MASTER
+
+1. Extraia este ZIP na raiz:
+D:\GitHub\cantus-dei
+
+2. Execute no Neon:
+database\003_master_global.sql
+
+3. No arquivo apps\api\.env adicione:
+MASTER_EMAIL=SEU_EMAIL_DE_LOGIN
+
+4. No Render adicione a mesma variável:
+MASTER_EMAIL=SEU_EMAIL_DE_LOGIN
+
+5. Também será necessário adaptar os arquivos abaixo conforme instruções:
+- apps/api/src/db/schema.ts
+- apps/api/src/routes/auth.ts
+- apps/api/src/server.ts
+- apps/web/src/contexts/AuthContext.tsx
+- apps/web/src/pages/Dashboard.tsx
+- apps/web/src/App.tsx
+
+IMPORTANTE:
+Este ZIP contém os novos arquivos e o SQL, mas como o seu projeto completo já está em evolução, prefira aplicar os trechos abaixo ou me pedir a versão completa consolidada com MASTER já incorporado.
+
+Após publicar:
+- saia do Cantus Dei
+- entre novamente
+- se o e-mail bater com MASTER_EMAIL, seu usuário será promovido automaticamente
+
+Como alternativa imediata, após executar o SQL, rode no Neon:
+
+UPDATE users
+SET perfil_global = 'MASTER',
+    updated_at = now()
+WHERE lower(email) = lower('SEU_EMAIL_DE_LOGIN');
