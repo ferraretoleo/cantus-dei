@@ -6,7 +6,15 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Registrar() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ nome: '', email: '', telefone: '', senha: '', confirmar: '' });
+
+  const [form, setForm] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    senha: '',
+    confirmar: ''
+  });
+
   const [erro, setErro] = useState('');
 
   async function submit(e: FormEvent) {
@@ -31,43 +39,94 @@ export default function Registrar() {
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Erro ao criar conta.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao criar conta.'
+      );
     }
   }
 
   return (
-    <main className="min-h-screen grid place-items-center bg-slate-50 p-6">
-      <form onSubmit={submit} className="w-full max-w-lg bg-white rounded-3xl border border-slate-200 p-8">
-        <div className="text-sm font-extrabold uppercase tracking-[.18em] text-violet-700">Cantus Dei</div>
-        <h1 className="mt-3 text-3xl font-bold">Criar conta</h1>
+    <main className="cantus-page min-h-screen py-10 px-5">
+      <div className="cantus-shell max-w-3xl">
+        <Link
+          to="/login"
+          className="cantus-eyebrow"
+        >
+          ← Cantus Dei
+        </Link>
 
-        {[
-          ['nome', 'Nome', 'text'],
-          ['email', 'E-mail', 'email'],
-          ['telefone', 'Telefone', 'text'],
-          ['senha', 'Senha', 'password'],
-          ['confirmar', 'Confirmar senha', 'password']
-        ].map(([key, label, type]) => (
-          <label className="block mt-4" key={key}>
-            <span className="text-sm font-medium">{label}</span>
-            <input
-              required={key !== 'telefone'}
-              type={type}
-              value={(form as Record<string,string>)[key]}
-              onChange={e => setForm({ ...form, [key]: e.target.value })}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
-            />
-          </label>
-        ))}
+        <div className="mt-12 grid md:grid-cols-[.7fr_1.3fr] gap-8 md:gap-12 items-start">
+          <aside>
+            <div className="text-5xl mb-6">
+              ♩
+            </div>
 
-        {erro && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{erro}</div>}
+            <div className="cantus-eyebrow">
+              Faça parte
+            </div>
 
-        <button className="mt-6 w-full rounded-xl bg-violet-700 py-3 font-semibold text-white">Criar conta</button>
+            <h1 className="cantus-display mt-4 text-5xl">
+              Sua música
+              <span className="block cantus-gold">
+                encontra lugar.
+              </span>
+            </h1>
 
-        <p className="mt-5 text-center text-sm text-slate-500">
-          Já possui conta? <Link className="font-semibold text-violet-700" to="/login">Entrar</Link>
-        </p>
-      </form>
+            <p className="mt-5 cantus-muted leading-7">
+              Crie sua conta para participar de grupos, escalas e
+              repertórios de celebração.
+            </p>
+          </aside>
+
+          <form
+            onSubmit={submit}
+            className="cantus-card p-6 sm:p-8"
+          >
+            <h2 className="cantus-display text-3xl">
+              Criar conta
+            </h2>
+
+            {[
+              ['nome', 'Nome', 'text'],
+              ['email', 'E-mail', 'email'],
+              ['telefone', 'Telefone', 'text'],
+              ['senha', 'Senha', 'password'],
+              ['confirmar', 'Confirmar senha', 'password']
+            ].map(([key, label, type]) => (
+              <label className="block mt-4" key={key}>
+                <span className="text-sm font-semibold text-[#d9d2c6]">
+                  {label}
+                </span>
+
+                <input
+                  required={key !== 'telefone'}
+                  type={type}
+                  value={(form as Record<string, string>)[key]}
+                  onChange={e =>
+                    setForm({
+                      ...form,
+                      [key]: e.target.value
+                    })
+                  }
+                  className="cantus-input mt-2"
+                />
+              </label>
+            ))}
+
+            {erro && (
+              <div className="mt-4 rounded-xl border border-red-500/20 bg-red-950/35 p-3 text-sm text-red-200">
+                {erro}
+              </div>
+            )}
+
+            <button className="cantus-primary mt-6 w-full py-3.5">
+              Criar conta
+            </button>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

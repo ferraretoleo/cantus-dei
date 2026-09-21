@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
@@ -21,42 +22,137 @@ export default function Login() {
         method: 'POST',
         body: JSON.stringify({ email, senha })
       });
+
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Erro ao entrar.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao entrar.'
+      );
     } finally {
       setCarregando(false);
     }
   }
 
   return (
-    <main className="min-h-screen grid place-items-center bg-violet-50 p-6">
-      <form onSubmit={submit} className="w-full max-w-md bg-white rounded-3xl border border-violet-100 p-8 shadow-xl shadow-violet-950/5">
-        <div className="text-sm font-extrabold uppercase tracking-[.18em] text-violet-700">Cantus Dei</div>
-        <h1 className="mt-3 text-3xl font-bold">Entrar</h1>
-        <p className="mt-2 text-slate-500">Liturgia, repertório e músicos no mesmo lugar.</p>
+    <main className="cantus-page min-h-screen grid lg:grid-cols-[1.2fr_.8fr]">
+      <section className="hidden lg:flex cantus-staff relative min-h-screen items-end overflow-hidden border-r border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(213,174,98,.13),transparent_25rem),linear-gradient(155deg,#171014_0%,#0b0c0e_58%,#111214_100%)]" />
 
-        <label className="block mt-7">
-          <span className="text-sm font-medium">E-mail</span>
-          <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3" />
-        </label>
+        <div className="absolute right-[8%] top-[13%] cantus-vinyl opacity-90" />
 
-        <label className="block mt-4">
-          <span className="text-sm font-medium">Senha</span>
-          <input required type="password" value={senha} onChange={e => setSenha(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3" />
-        </label>
+        <div className="relative z-10 p-12 xl:p-16 max-w-3xl">
+          <div className="cantus-eyebrow">
+            Música · Liturgia · Comunhão
+          </div>
 
-        {erro && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{erro}</div>}
+          <h1 className="cantus-display mt-6 text-6xl xl:text-7xl leading-[.92]">
+            A música a serviço
+            <span className="block cantus-gold">
+              da celebração.
+            </span>
+          </h1>
 
-        <button disabled={carregando} className="mt-6 w-full rounded-xl bg-violet-700 py-3 font-semibold text-white">
-          {carregando ? 'Entrando...' : 'Entrar'}
-        </button>
+          <p className="mt-7 max-w-xl text-lg leading-8 cantus-muted">
+            Organize repertórios, músicos, cifras, partituras e
+            celebrações sem perder a essência do ministério.
+          </p>
 
-        <p className="mt-5 text-center text-sm text-slate-500">
-          Não tem conta? <Link className="font-semibold text-violet-700" to="/registrar">Criar conta</Link>
-        </p>
-      </form>
+          <div className="mt-10 cantus-quote max-w-xl">
+            <div className="cantus-display text-2xl">
+              “Cantai ao Senhor um cântico novo.”
+            </div>
+            <div className="mt-2 text-sm cantus-gold">
+              Salmo 95(96),1
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="min-h-screen flex items-center justify-center p-5 sm:p-8">
+        <form
+          onSubmit={submit}
+          className="w-full max-w-md"
+        >
+          <div className="lg:hidden cantus-eyebrow mb-8">
+            Cantus Dei
+          </div>
+
+          <div className="text-4xl select-none mb-6">
+            ♫
+          </div>
+
+          <div className="cantus-eyebrow">
+            Bem-vindo ao Cantus Dei
+          </div>
+
+          <h2 className="cantus-display mt-4 text-5xl">
+            Entre no seu
+            <span className="block cantus-gold">
+              ministério.
+            </span>
+          </h2>
+
+          <p className="mt-4 cantus-muted">
+            Acesse seus grupos, repertórios e próximas celebrações.
+          </p>
+
+          <label className="block mt-8">
+            <span className="text-sm font-semibold text-[#d9d2c6]">
+              E-mail
+            </span>
+
+            <input
+              required
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="cantus-input mt-2"
+              placeholder="seu@email.com"
+            />
+          </label>
+
+          <label className="block mt-4">
+            <span className="text-sm font-semibold text-[#d9d2c6]">
+              Senha
+            </span>
+
+            <input
+              required
+              type="password"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              className="cantus-input mt-2"
+              placeholder="••••••••"
+            />
+          </label>
+
+          {erro && (
+            <div className="mt-4 rounded-xl border border-red-500/20 bg-red-950/35 p-3 text-sm text-red-200">
+              {erro}
+            </div>
+          )}
+
+          <button
+            disabled={carregando}
+            className="cantus-primary mt-6 w-full py-3.5 disabled:opacity-50"
+          >
+            {carregando ? 'Entrando...' : 'Entrar'}
+          </button>
+
+          <p className="mt-6 text-center text-sm cantus-muted">
+            Ainda não participa?{' '}
+            <Link
+              className="font-bold cantus-gold"
+              to="/registrar"
+            >
+              Criar conta
+            </Link>
+          </p>
+        </form>
+      </section>
     </main>
   );
 }
