@@ -16,9 +16,17 @@ import { masterRoutes } from './routes/master.js';
 
 const app = Fastify({ logger: true });
 
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 await app.register(cors, {
-  origin: process.env.CORS_ORIGIN?.split(',') ?? false,
-  credentials: true
+  origin: corsOrigins.length ? corsOrigins : false,
+  credentials: true,
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400
 });
 
 await app.register(authPlugin);
