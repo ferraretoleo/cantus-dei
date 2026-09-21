@@ -169,20 +169,18 @@ export async function momentoRoutes(app: FastifyInstance) {
         }
       }
 
-      await db.transaction(async tx => {
-        await tx
-          .delete(musicaMomentos)
-          .where(eq(musicaMomentos.musicaId, musicaId));
+      await db
+        .delete(musicaMomentos)
+        .where(eq(musicaMomentos.musicaId, musicaId));
 
-        if (ids.length) {
-          await tx.insert(musicaMomentos).values(
-            ids.map(momentoId => ({
-              musicaId,
-              momentoId
-            }))
-          );
-        }
-      });
+      if (ids.length) {
+        await db.insert(musicaMomentos).values(
+          ids.map(momentoId => ({
+            musicaId,
+            momentoId
+          }))
+        );
+      }
 
       return { ok: true };
     }

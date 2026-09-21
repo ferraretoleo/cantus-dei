@@ -43,13 +43,17 @@ export async function groupRoutes(app: FastifyInstance) {
       });
     }
 
-    return db.transaction(async tx => {
-      const [grupo] = await tx
+    let grupoCriadoId: string | null = null;
+
+    try {
+      const [grupo] = await db
         .insert(grupos)
         .values(parsed.data)
         .returning();
 
-      await tx.insert(grupoMembros).values({
+      grupoCriadoId = grupo.id;
+
+      await db.insert(grupoMembros).values({
         grupoId: grupo.id,
         userId: request.user.sub,
         papel: 'RESPONSAVEL'
@@ -59,7 +63,19 @@ export async function groupRoutes(app: FastifyInstance) {
         ...grupo,
         papel: 'RESPONSAVEL'
       });
-    });
+    } catch (error) {
+      if (grupoCriadoId) {
+        try {
+          await db
+            .delete(grupos)
+            .where(eq(grupos.id, grupoCriadoId));
+        } catch {
+          // preserva o erro original
+        }
+      }
+
+      throw error;
+    }
   });
 
   app.get(

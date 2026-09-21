@@ -39,55 +39,53 @@ export async function inviteRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const token = (request.params as { token: string }).token;
 
-      return db.transaction(async tx => {
-        const [convite] = await tx
-          .select()
-          .from(convites)
-          .where(
-            and(
-              eq(convites.token, token),
-              eq(convites.status, 'PENDENTE'),
-              gt(convites.expiraEm, new Date())
-            )
+      const [convite] = await db
+        .select()
+        .from(convites)
+        .where(
+          and(
+            eq(convites.token, token),
+            eq(convites.status, 'PENDENTE'),
+            gt(convites.expiraEm, new Date())
           )
-          .limit(1);
+        )
+        .limit(1);
 
-        if (!convite) {
-          return reply.code(404).send({
-            error: 'NOT_FOUND',
-            message: 'Convite inválido ou expirado.'
-          });
-        }
+      if (!convite) {
+        return reply.code(404).send({
+          error: 'NOT_FOUND',
+          message: 'Convite inválido ou expirado.'
+        });
+      }
 
-        await tx
-          .insert(grupoMembros)
-          .values({
-            grupoId: convite.grupoId,
-            userId: request.user.sub,
-            papel: convite.papelProposto
-          })
-          .onConflictDoUpdate({
-            target: [grupoMembros.grupoId, grupoMembros.userId],
-            set: {
-              papel: convite.papelProposto,
-              ativo: true,
-              updatedAt: new Date()
-            }
-          });
-
-        await tx
-          .update(convites)
-          .set({
-            status: 'ACEITO',
+      await db
+        .insert(grupoMembros)
+        .values({
+          grupoId: convite.grupoId,
+          userId: request.user.sub,
+          papel: convite.papelProposto
+        })
+        .onConflictDoUpdate({
+          target: [grupoMembros.grupoId, grupoMembros.userId],
+          set: {
+            papel: convite.papelProposto,
+            ativo: true,
             updatedAt: new Date()
-          })
-          .where(eq(convites.id, convite.id));
+          }
+        });
 
-        return {
-          ok: true,
-          grupoId: convite.grupoId
-        };
-      });
+      await db
+        .update(convites)
+        .set({
+          status: 'ACEITO',
+          updatedAt: new Date()
+        })
+        .where(eq(convites.id, convite.id));
+
+      return {
+        ok: true,
+        grupoId: convite.grupoId
+      };
     }
   );
 }

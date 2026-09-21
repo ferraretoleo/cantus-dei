@@ -257,24 +257,22 @@ export async function missaRoutes(app: FastifyInstance) {
         });
       }
 
-      await db.transaction(async tx => {
-        await tx
-          .delete(missaMusicas)
-          .where(eq(missaMusicas.missaId, missaId));
+      await db
+        .delete(missaMusicas)
+        .where(eq(missaMusicas.missaId, missaId));
 
-        if (parsed.data.itens.length) {
-          await tx.insert(missaMusicas).values(
-            parsed.data.itens.map((item, index) => ({
-              missaId,
-              musicaId: item.musicaId,
-              momentoId: item.momentoId,
-              ordem: index + 1,
-              tomDaExecucao: item.tomDaExecucao || null,
-              observacao: item.observacao || null
-            }))
-          );
-        }
-      });
+      if (parsed.data.itens.length) {
+        await db.insert(missaMusicas).values(
+          parsed.data.itens.map((item, index) => ({
+            missaId,
+            musicaId: item.musicaId,
+            momentoId: item.momentoId,
+            ordem: index + 1,
+            tomDaExecucao: item.tomDaExecucao || null,
+            observacao: item.observacao || null
+          }))
+        );
+      }
 
       return { ok: true };
     }
@@ -297,21 +295,19 @@ export async function missaRoutes(app: FastifyInstance) {
         });
       }
 
-      await db.transaction(async tx => {
-        await tx
-          .delete(missaEscala)
-          .where(eq(missaEscala.missaId, missaId));
+      await db
+        .delete(missaEscala)
+        .where(eq(missaEscala.missaId, missaId));
 
-        if (parsed.data.itens.length) {
-          await tx.insert(missaEscala).values(
-            parsed.data.itens.map(item => ({
-              missaId,
-              userId: item.userId,
-              instrumentoVoz: item.instrumentoVoz || null
-            }))
-          );
-        }
-      });
+      if (parsed.data.itens.length) {
+        await db.insert(missaEscala).values(
+          parsed.data.itens.map(item => ({
+            missaId,
+            userId: item.userId,
+            instrumentoVoz: item.instrumentoVoz || null
+          }))
+        );
+      }
 
       return { ok: true };
     }
