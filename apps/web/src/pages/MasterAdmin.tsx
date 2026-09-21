@@ -73,52 +73,56 @@ export default function MasterAdmin() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="bg-slate-950 text-white">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+    <main className="cantus-page">
+      <header className="border-b border-white/10 bg-[#0b0c0e]/90">
+        <div className="cantus-shell h-20 flex items-center justify-between">
           <div>
-            <div className="text-xs font-bold uppercase tracking-[.18em] text-violet-300">
+            <div className="cantus-eyebrow">
               Cantus Dei
             </div>
-            <h1 className="mt-1 text-2xl font-bold">
+            <div className="cantus-display mt-1 text-lg">
               Administração MASTER
-            </h1>
+            </div>
           </div>
 
-          <Link
-            to="/dashboard"
-            className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold"
-          >
+          <Link to="/dashboard" className="cantus-secondary px-4 py-2 text-sm">
             Voltar
           </Link>
         </div>
       </header>
 
-      <section className="max-w-6xl mx-auto p-6 sm:py-10">
-        <h2 className="text-3xl font-bold text-slate-900">
-          Usuários do sistema
-        </h2>
+      <section className="cantus-shell py-10">
+        <div className="cantus-eyebrow">
+          Administração global
+        </div>
 
-        <p className="mt-2 text-slate-500">
-          Usuários MASTER possuem administração global do Cantus Dei.
+        <h1 className="cantus-section-title mt-3">
+          Usuários do
+          <span className="cantus-gold">
+            {' '}Cantus Dei.
+          </span>
+        </h1>
+
+        <p className="mt-3 cantus-muted">
+          Promova ou remova perfis MASTER sem misturar com os papéis dos grupos.
         </p>
 
         {erro && (
-          <div className="mt-5 rounded-xl bg-red-50 p-4 text-red-700">
+          <div className="mt-5 rounded-xl border border-red-500/20 bg-red-950/30 p-4 text-red-200">
             {erro}
           </div>
         )}
 
         {mensagem && (
-          <div className="mt-5 rounded-xl bg-emerald-50 p-4 text-emerald-700">
+          <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-emerald-200">
             {mensagem}
           </div>
         )}
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="cantus-card mt-7 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+            <table className="cantus-table w-full text-left">
+              <thead>
                 <tr>
                   <th className="px-5 py-4">Usuário</th>
                   <th className="px-5 py-4">Perfil global</th>
@@ -127,34 +131,39 @@ export default function MasterAdmin() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {usuarios.map(usuario => (
                   <tr key={usuario.id}>
                     <td className="px-5 py-4">
-                      <div className="font-semibold text-slate-900">
+                      <div className="cantus-display text-lg">
                         {usuario.nome}
                         {usuario.id === user?.id && (
-                          <span className="ml-2 text-xs font-bold text-violet-700">
+                          <span className="ml-2 cantus-gold text-xs font-bold">
                             VOCÊ
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-slate-500">
+
+                      <div className="mt-1 text-sm cantus-muted">
                         {usuario.email}
                       </div>
                     </td>
 
                     <td className="px-5 py-4">
-                      {usuario.perfilGlobal}
+                      <span className="cantus-badge">
+                        {usuario.perfilGlobal}
+                      </span>
                     </td>
 
                     <td className="px-5 py-4">
-                      {usuario.ativo ? 'Ativo' : 'Inativo'}
+                      <span className="text-sm cantus-muted">
+                        {usuario.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
                     </td>
 
                     <td className="px-5 py-4 text-right">
                       {usuario.id === user?.id ? (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs cantus-muted">
                           MASTER principal
                         </span>
                       ) : usuario.perfilGlobal === 'MASTER' ? (
@@ -162,7 +171,7 @@ export default function MasterAdmin() {
                           onClick={() =>
                             alterarPerfil(usuario, 'USUARIO')
                           }
-                          className="text-sm font-semibold text-red-600"
+                          className="cantus-danger px-4 py-2 text-sm"
                         >
                           Remover MASTER
                         </button>
@@ -171,7 +180,7 @@ export default function MasterAdmin() {
                           onClick={() =>
                             alterarPerfil(usuario, 'MASTER')
                           }
-                          className="text-sm font-semibold text-violet-700"
+                          className="cantus-secondary px-4 py-2 text-sm"
                         >
                           Tornar MASTER
                         </button>

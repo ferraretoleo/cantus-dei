@@ -13,7 +13,6 @@ export type GrupoAtivo = {
 
 export function getGrupoAtivo(): GrupoAtivo | null {
   const raw = localStorage.getItem('cantus_grupo_ativo');
-
   if (!raw) return null;
 
   try {
@@ -41,10 +40,7 @@ export default function GroupHeader() {
       <div className="cantus-shell">
         <div className="h-20 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <Link
-              to="/dashboard"
-              className="cantus-eyebrow"
-            >
+            <Link to="/dashboard" className="cantus-eyebrow">
               Cantus Dei
             </Link>
 
@@ -54,24 +50,12 @@ export default function GroupHeader() {
           </div>
 
           <nav className="hidden xl:flex items-center gap-1">
-            <Link className="cantus-nav-link" to={`/g/${slug}`}>
-              Início
-            </Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/calendario`}>
-              Calendário
-            </Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/musicas`}>
-              Músicas
-            </Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/momentos`}>
-              Momentos
-            </Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/integrantes`}>
-              Integrantes
-            </Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/convites`}>
-              Convites
-            </Link>
+            <Link className="cantus-nav-link" to={`/g/${slug}`}>Início</Link>
+            <Link className="cantus-nav-link" to={`/g/${slug}/calendario`}>Calendário</Link>
+            <Link className="cantus-nav-link" to={`/g/${slug}/musicas`}>Músicas</Link>
+            <Link className="cantus-nav-link" to={`/g/${slug}/momentos`}>Momentos</Link>
+            <Link className="cantus-nav-link" to={`/g/${slug}/integrantes`}>Integrantes</Link>
+            <Link className="cantus-nav-link" to={`/g/${slug}/convites`}>Convites</Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -79,40 +63,24 @@ export default function GroupHeader() {
               <div className="text-sm font-semibold text-[#e6dfd4]">
                 {user?.nome}
               </div>
-
               <div className="mt-1 text-[10px] font-extrabold tracking-[.12em] uppercase cantus-gold">
                 {grupo.papel}
               </div>
             </div>
 
-            <button
-              onClick={sair}
-              className="cantus-secondary px-4 py-2 text-sm"
-            >
+            <button onClick={sair} className="cantus-secondary px-4 py-2 text-sm">
               Sair
             </button>
           </div>
         </div>
 
         <nav className="xl:hidden flex gap-1 overflow-x-auto pb-3">
-          <Link className="cantus-nav-link" to={`/g/${slug}`}>
-            Início
-          </Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/calendario`}>
-            Calendário
-          </Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/musicas`}>
-            Músicas
-          </Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/momentos`}>
-            Momentos
-          </Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/integrantes`}>
-            Integrantes
-          </Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/convites`}>
-            Convites
-          </Link>
+          <Link className="cantus-nav-link" to={`/g/${slug}`}>Início</Link>
+          <Link className="cantus-nav-link" to={`/g/${slug}/calendario`}>Calendário</Link>
+          <Link className="cantus-nav-link" to={`/g/${slug}/musicas`}>Músicas</Link>
+          <Link className="cantus-nav-link" to={`/g/${slug}/momentos`}>Momentos</Link>
+          <Link className="cantus-nav-link" to={`/g/${slug}/integrantes`}>Integrantes</Link>
+          <Link className="cantus-nav-link" to={`/g/${slug}/convites`}>Convites</Link>
         </nav>
       </div>
     </header>

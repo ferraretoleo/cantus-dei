@@ -7,9 +7,14 @@ export default function Integrantes() {
   const { slug } = useParams();
   const grupo = getGrupoAtivo();
   const [membros, setMembros] = useState<any[]>([]);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
-    if (grupo) api(`/grupos/${grupo.id}/membros`).then(setMembros);
+    if (grupo) {
+      api(`/grupos/${grupo.id}/membros`)
+        .then(setMembros)
+        .catch(e => setErro(e.message));
+    }
   }, []);
 
   if (!grupo || grupo.slug !== slug) {
@@ -17,21 +22,67 @@ export default function Integrantes() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="cantus-page">
       <GroupHeader />
-      <section className="max-w-5xl mx-auto p-6 sm:py-10">
-        <h1 className="text-3xl font-bold">Integrantes</h1>
 
-        <div className="mt-6 bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100">
-          {membros.map(m => (
-            <div key={m.userId} className="p-5 flex items-center justify-between gap-4">
-              <div>
-                <div className="font-semibold">{m.nome}</div>
-                <div className="text-sm text-slate-500">{m.email}</div>
-                <div className="text-xs text-slate-400 mt-1">{[m.instrumento, m.voz].filter(Boolean).join(' · ')}</div>
+      <section className="cantus-shell py-8 sm:py-11">
+        <div className="cantus-eyebrow">
+          Ministério
+        </div>
+
+        <h1 className="cantus-section-title mt-3">
+          Integrantes
+        </h1>
+
+        <p className="mt-3 cantus-muted">
+          Quem serve com você neste grupo.
+        </p>
+
+        {erro && (
+          <div className="mt-5 rounded-xl border border-red-500/20 bg-red-950/30 p-4 text-red-200">
+            {erro}
+          </div>
+        )}
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-7">
+          {membros.map((m, i) => (
+            <article
+              key={m.userId}
+              className="cantus-card p-5"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full border border-[#d5ae62]/25 bg-[#d5ae62]/10 grid place-items-center cantus-gold text-xl">
+                  {i % 2 === 0 ? '♫' : '♪'}
+                </div>
+
+                <div className="min-w-0">
+                  <div className="cantus-display text-xl truncate">
+                    {m.nome}
+                  </div>
+                  <div className="mt-1 text-sm cantus-muted truncate">
+                    {m.email}
+                  </div>
+                </div>
               </div>
-              <span className="rounded-full bg-violet-50 text-violet-700 px-3 py-1 text-xs font-bold">{m.papel}</span>
-            </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="cantus-badge">
+                  {m.papel}
+                </span>
+
+                {m.instrumento && (
+                  <span className="cantus-badge">
+                    {m.instrumento}
+                  </span>
+                )}
+
+                {m.voz && (
+                  <span className="cantus-badge">
+                    {m.voz}
+                  </span>
+                )}
+              </div>
+            </article>
           ))}
         </div>
       </section>

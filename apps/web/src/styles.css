@@ -17,9 +17,7 @@
   --cantus-wine: #6f263d;
 }
 
-html {
-  background: var(--cantus-bg);
-}
+html { background: var(--cantus-bg); }
 
 body {
   margin: 0;
@@ -31,18 +29,11 @@ body {
   color: var(--cantus-cream);
 }
 
-button,
-a,
-input,
-select,
-textarea {
+button, a, input, select, textarea {
   transition: all .18s ease;
 }
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
+button, a { -webkit-tap-highlight-color: transparent; }
 
 ::selection {
   background: var(--cantus-gold);
@@ -97,13 +88,16 @@ a {
   outline: none;
 }
 
-.cantus-input::placeholder {
-  color: #77746e;
-}
+.cantus-input::placeholder { color: #77746e; }
 
 .cantus-input:focus {
   border-color: rgba(213,174,98,.72);
   box-shadow: 0 0 0 3px rgba(213,174,98,.1);
+}
+
+select.cantus-input option {
+  background: #151619;
+  color: #f1eadc;
 }
 
 .cantus-primary {
@@ -130,6 +124,14 @@ a {
 .cantus-secondary:hover {
   border-color: rgba(213,174,98,.45);
   color: var(--cantus-gold-soft);
+}
+
+.cantus-danger {
+  border: 1px solid rgba(239,68,68,.25);
+  border-radius: 999px;
+  background: rgba(127,29,29,.16);
+  color: #fecaca;
+  font-weight: 700;
 }
 
 .cantus-staff {
@@ -210,12 +212,45 @@ a {
   color: var(--cantus-cream);
 }
 
-.cantus-muted {
-  color: var(--cantus-muted);
+.cantus-muted { color: var(--cantus-muted); }
+.cantus-gold { color: var(--cantus-gold); }
+
+.cantus-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(213,174,98,.24);
+  background: rgba(213,174,98,.08);
+  color: var(--cantus-gold-soft);
+  padding: .28rem .65rem;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
-.cantus-gold {
+.cantus-divider {
+  border-color: var(--cantus-line);
+}
+
+.cantus-table th {
   color: var(--cantus-gold);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.cantus-table td,
+.cantus-table th {
+  border-bottom: 1px solid var(--cantus-line);
+}
+
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
 }
 
 @media (max-width: 720px) {
