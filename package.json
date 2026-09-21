@@ -1,0 +1,16 @@
+{
+  "name": "cantus-dei",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @cantus-dei/web",
+    "dev:api": "npm run dev -w @cantus-dei/api",
+    "build": "npm run build -w @cantus-dei/shared && npm run build -w @cantus-dei/api && npm run build -w @cantus-dei/web",
+    "db:generate": "npm run db:generate -w @cantus-dei/api",
+    "db:migrate": "npm run db:migrate -w @cantus-dei/api",
+    "db:seed": "npm run db:seed -w @cantus-dei/api"
+  }
+}
