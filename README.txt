@@ -1,69 +1,58 @@
-CANTUS DEI - PARTITURA SEM PDF / SEM R2
+CANTUS DEI - MOMENTOS LITÚRGICOS
 
-Esta versão deixa o módulo de músicas funcional sem armazenamento de arquivos.
+Esta fase adiciona:
 
-RECURSOS
+- Lista dos 12 momentos litúrgicos padrão
+- Momentos personalizados por grupo
+- Vínculo de uma música com um ou vários momentos
+- Tela de administração dos momentos
+- Seleção dos momentos dentro do cadastro/edição da música
+- Validação no backend para impedir vínculo com momentos de outro grupo
 
-- Cadastro de música
-- Letra
-- Cifra
-- Partitura em ABC Notation
-- Pré-visualização da partitura
-- Impressão da partitura
-- Tom original
-- BPM
-- Compasso
-- Vídeo de referência
-- Tags
-- Observações
-- Edição
-- Exclusão lógica
-- Busca por título
+ARQUIVOS
 
-Nenhum cartão, R2 ou armazenamento externo é necessário.
+apps/api/src/routes/momentos.ts
+apps/api/src/server.ts
+apps/web/src/pages/MomentosLiturgicos.tsx
+apps/web/src/pages/Musicas.tsx
+apps/web/src/components/GroupHeader.tsx
+apps/web/src/App.tsx
+database/002_seed_momentos.sql
 
-PASSO 1 - NEON
+COMO APLICAR
 
-Abra o SQL Editor e execute:
-
-database/001_add_notacao_abc.sql
-
-PASSO 2 - ARQUIVOS
-
-Extraia este ZIP na raiz:
-
+1. Extraia o ZIP na raiz:
 D:\GitHub\cantus-dei
 
-Aceite substituir os arquivos.
+2. No Neon SQL Editor, execute:
+database/002_seed_momentos.sql
 
-PASSO 3 - DEPENDÊNCIA
+Este SQL é idempotente. Ele só cria os momentos padrão que estiverem faltando.
 
-Execute:
-
-npm install
-
-Isso instalará abcjs no frontend.
-
-PASSO 4 - BUILD
+3. Rode os builds:
 
 npm run build -w @cantus-dei/shared
 npm run build -w @cantus-dei/api
 npm run build -w @cantus-dei/web
 
-PASSO 5 - PUBLICAÇÃO
+4. Se tudo passar:
 
 git add .
-git commit -m "Adiciona partituras ABC sem storage externo"
+git commit -m "Adiciona momentos liturgicos e vinculo com musicas"
 git push origin main
 
-EXEMPLO ABC
+ROTAS NOVAS
 
-X:1
-T:Exemplo de Partitura
-M:4/4
-L:1/4
-Q:1/4=90
-K:C
-C D E F | G A G2 | F E D C | C4 |
+GET    /grupos/:id/momentos
+POST   /grupos/:id/momentos
+DELETE /grupos/:id/momentos/:momentoId
 
-A aplicação renderiza isso como pentagrama musical.
+GET    /grupos/:id/musicas/:musicaId/momentos
+PUT    /grupos/:id/musicas/:musicaId/momentos
+
+PRÓXIMA FASE
+
+Calendário de Missas
+Criação da celebração
+Seleção do repertório por momento litúrgico
+Escala dos músicos

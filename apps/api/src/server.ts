@@ -9,6 +9,7 @@ import { authRoutes } from './routes/auth.js';
 import { groupRoutes } from './routes/groups.js';
 import { inviteRoutes } from './routes/invites.js';
 import { musicRoutes } from './routes/musics.js';
+import { momentoRoutes } from './routes/momentos.js';
 
 const app = Fastify({ logger: true });
 
@@ -24,6 +25,7 @@ await app.register(authRoutes);
 await app.register(groupRoutes);
 await app.register(inviteRoutes);
 await app.register(musicRoutes);
+await app.register(momentoRoutes);
 
 app.get('/health', async () => ({
   status: 'ok',

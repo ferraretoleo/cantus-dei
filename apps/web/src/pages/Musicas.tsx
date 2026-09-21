@@ -4,6 +4,14 @@ import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
 import AbcScore from '../components/AbcScore';
 import { api } from '../lib/api';
 
+type Momento = {
+  id: string;
+  nome: string;
+  slug: string;
+  ordemLiturgica: number;
+  grupoId?: string | null;
+};
+
 type Musica = {
   id: string;
   titulo: string;
@@ -47,6 +55,8 @@ export default function Musicas() {
   const grupo = getGrupoAtivo();
 
   const [musicas, setMusicas] = useState<Musica[]>([]);
+  const [momentos, setMomentos] = useState<Momento[]>([]);
+  const [momentoIds, setMomentoIds] = useState<string[]>([]);
   const [busca, setBusca] = useState('');
   const [form, setForm] = useState(vazio);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -66,12 +76,21 @@ export default function Musicas() {
     setErro('');
 
     try {
-      const data = await api(
-        `/grupos/${grupo.id}/musicas${busca.trim() ? `?q=${encodeURIComponent(busca.trim())}` : ''}`
-      );
-      setMusicas(data);
+      const [listaMusicas, listaMomentos] = await Promise.all([
+        api(
+          `/grupos/${grupo.id}/musicas${busca.trim() ? `?q=${encodeURIComponent(busca.trim())}` : ''}`
+        ),
+        api(`/grupos/${grupo.id}/momentos`)
+      ]);
+
+      setMusicas(listaMusicas);
+      setMomentos(listaMomentos);
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Erro ao carregar músicas.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao carregar o acervo.'
+      );
     } finally {
       setCarregando(false);
     }
@@ -89,13 +108,14 @@ export default function Musicas() {
 
   function nova() {
     setForm(vazio);
+    setMomentoIds([]);
     setEditandoId(null);
     setMensagem('');
     setErro('');
     setMostrarForm(true);
   }
 
-  function editar(musica: Musica) {
+  async function editar(musica: Musica) {
     setForm({
       titulo: musica.titulo || '',
       autorCompositor: musica.autorCompositor || '',
@@ -114,7 +134,33 @@ export default function Musicas() {
     setMostrarForm(true);
     setMensagem('');
     setErro('');
+
+    try {
+      const vinculados = await api(
+        `/grupos/${grupoId}/musicas/${musica.id}/momentos`
+      );
+
+      setMomentoIds(
+        vinculados.map((item: Momento) => item.id)
+      );
+    } catch (error) {
+      setMomentoIds([]);
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao carregar os momentos desta música.'
+      );
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function alternarMomento(id: string) {
+    setMomentoIds(atual =>
+      atual.includes(id)
+        ? atual.filter(item => item !== id)
+        : [...atual, id]
+    );
   }
 
   async function salvar(e: FormEvent) {
@@ -142,42 +188,72 @@ export default function Musicas() {
     };
 
     try {
+      let musicaId = editandoId;
+
       if (editandoId) {
         await api(`/grupos/${grupoId}/musicas/${editandoId}`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         });
-        setMensagem('Música atualizada com sucesso.');
       } else {
-        await api(`/grupos/${grupoId}/musicas`, {
+        const criada = await api(`/grupos/${grupoId}/musicas`, {
           method: 'POST',
           body: JSON.stringify(payload)
         });
-        setMensagem('Música cadastrada com sucesso.');
+
+        musicaId = criada.id;
       }
+
+      if (musicaId) {
+        await api(
+          `/grupos/${grupoId}/musicas/${musicaId}/momentos`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({ momentoIds })
+          }
+        );
+      }
+
+      setMensagem(
+        editandoId
+          ? 'Música atualizada com sucesso.'
+          : 'Música cadastrada com sucesso.'
+      );
 
       setMostrarForm(false);
       setEditandoId(null);
+      setMomentoIds([]);
       setForm(vazio);
       await carregar();
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Erro ao salvar música.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao salvar música.'
+      );
     } finally {
       setSalvando(false);
     }
   }
 
   async function excluir(musica: Musica) {
-    if (!window.confirm(`Excluir "${musica.titulo}" do acervo?`)) return;
+    if (!window.confirm(`Excluir "${musica.titulo}" do acervo?`)) {
+      return;
+    }
 
     try {
       await api(`/grupos/${grupoId}/musicas/${musica.id}`, {
         method: 'DELETE'
       });
+
       setMensagem('Música removida do acervo.');
       await carregar();
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Erro ao excluir música.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir música.'
+      );
     }
   }
 
@@ -188,9 +264,12 @@ export default function Musicas() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-7">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Músicas</h1>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Músicas
+            </h1>
+
             <p className="mt-2 text-slate-500">
-              Letras, cifras e partituras renderizadas diretamente no Cantus Dei.
+              Letras, cifras, partituras e classificação litúrgica.
             </p>
           </div>
 
@@ -214,8 +293,9 @@ export default function Musicas() {
                 <h2 className="text-xl font-bold text-slate-900">
                   {editandoId ? 'Editar música' : 'Nova música'}
                 </h2>
+
                 <p className="text-sm text-slate-500 mt-1">
-                  Cadastre letra, cifra e a partitura musical em ABC Notation.
+                  Cadastre os dados e selecione onde esta música pode ser utilizada.
                 </p>
               </div>
 
@@ -230,85 +310,180 @@ export default function Musicas() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Título *</span>
+                <span className="block text-sm font-medium mb-2">
+                  Título *
+                </span>
                 <input
                   required
                   value={form.titulo}
-                  onChange={e => setForm({ ...form, titulo: e.target.value })}
+                  onChange={e =>
+                    setForm({ ...form, titulo: e.target.value })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Autor / Compositor</span>
+                <span className="block text-sm font-medium mb-2">
+                  Autor / Compositor
+                </span>
                 <input
                   value={form.autorCompositor}
-                  onChange={e => setForm({ ...form, autorCompositor: e.target.value })}
+                  onChange={e =>
+                    setForm({
+                      ...form,
+                      autorCompositor: e.target.value
+                    })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Tom original</span>
+                <span className="block text-sm font-medium mb-2">
+                  Tom original
+                </span>
                 <input
                   value={form.tomOriginal}
-                  onChange={e => setForm({ ...form, tomOriginal: e.target.value })}
+                  onChange={e =>
+                    setForm({
+                      ...form,
+                      tomOriginal: e.target.value
+                    })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                   placeholder="Ex.: C, G, Dm"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-sm font-medium mb-2">BPM</span>
+                <span className="block text-sm font-medium mb-2">
+                  BPM
+                </span>
                 <input
                   type="number"
                   min="1"
                   max="400"
                   value={form.andamentoBpm}
-                  onChange={e => setForm({ ...form, andamentoBpm: e.target.value })}
+                  onChange={e =>
+                    setForm({
+                      ...form,
+                      andamentoBpm: e.target.value
+                    })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Compasso</span>
+                <span className="block text-sm font-medium mb-2">
+                  Compasso
+                </span>
                 <input
                   value={form.tempoCompasso}
-                  onChange={e => setForm({ ...form, tempoCompasso: e.target.value })}
+                  onChange={e =>
+                    setForm({
+                      ...form,
+                      tempoCompasso: e.target.value
+                    })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                   placeholder="Ex.: 4/4"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Vídeo de referência</span>
+                <span className="block text-sm font-medium mb-2">
+                  Vídeo de referência
+                </span>
                 <input
                   type="url"
                   value={form.videoUrl}
-                  onChange={e => setForm({ ...form, videoUrl: e.target.value })}
+                  onChange={e =>
+                    setForm({
+                      ...form,
+                      videoUrl: e.target.value
+                    })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                   placeholder="https://..."
                 />
               </label>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-4 mt-4">
+            <div className="mt-6">
+              <h3 className="font-bold text-slate-900">
+                Momentos Litúrgicos
+              </h3>
+
+              <p className="text-sm text-slate-500 mt-1 mb-4">
+                A mesma música pode ser utilizada em mais de um momento.
+              </p>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {momentos.map(momento => {
+                  const marcado = momentoIds.includes(momento.id);
+
+                  return (
+                    <label
+                      key={momento.id}
+                      className={`cursor-pointer rounded-xl border p-3 flex items-start gap-3 ${
+                        marcado
+                          ? 'border-violet-500 bg-violet-50'
+                          : 'border-slate-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={marcado}
+                        onChange={() =>
+                          alternarMomento(momento.id)
+                        }
+                        className="mt-1"
+                      />
+
+                      <span>
+                        <span className="block text-sm font-semibold text-slate-900">
+                          {momento.nome}
+                        </span>
+
+                        {momento.grupoId && (
+                          <span className="block text-xs text-violet-600 mt-1">
+                            Personalizado
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-4 mt-6">
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Letra</span>
+                <span className="block text-sm font-medium mb-2">
+                  Letra
+                </span>
                 <textarea
                   rows={10}
                   value={form.letra}
-                  onChange={e => setForm({ ...form, letra: e.target.value })}
+                  onChange={e =>
+                    setForm({ ...form, letra: e.target.value })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-sm font-medium mb-2">Cifra</span>
+                <span className="block text-sm font-medium mb-2">
+                  Cifra
+                </span>
                 <textarea
                   rows={10}
                   value={form.cifra}
-                  onChange={e => setForm({ ...form, cifra: e.target.value })}
+                  onChange={e =>
+                    setForm({ ...form, cifra: e.target.value })
+                  }
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 font-mono text-sm"
                 />
               </label>
@@ -322,7 +497,12 @@ export default function Musicas() {
 
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, notacaoAbc: exemploAbc })}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      notacaoAbc: exemploAbc
+                    })
+                  }
                   className="text-sm font-semibold text-violet-700"
                 >
                   Carregar exemplo
@@ -332,18 +512,22 @@ export default function Musicas() {
               <textarea
                 rows={12}
                 value={form.notacaoAbc}
-                onChange={e => setForm({ ...form, notacaoAbc: e.target.value })}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    notacaoAbc: e.target.value
+                  })
+                }
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 font-mono text-sm"
                 placeholder={exemploAbc}
               />
 
-              <p className="mt-2 text-xs text-slate-500">
-                A partitura é salva como texto no Neon e renderizada automaticamente.
-              </p>
-
               {form.notacaoAbc.trim() && (
                 <div className="mt-4">
-                  <div className="text-sm font-semibold mb-2">Pré-visualização</div>
+                  <div className="text-sm font-semibold mb-2">
+                    Pré-visualização
+                  </div>
+
                   <AbcScore
                     abc={form.notacaoAbc}
                     titulo={form.titulo || 'Partitura'}
@@ -353,21 +537,32 @@ export default function Musicas() {
             </div>
 
             <label className="block mt-4">
-              <span className="block text-sm font-medium mb-2">Tags</span>
+              <span className="block text-sm font-medium mb-2">
+                Tags
+              </span>
               <input
                 value={form.tags}
-                onChange={e => setForm({ ...form, tags: e.target.value })}
+                onChange={e =>
+                  setForm({ ...form, tags: e.target.value })
+                }
                 className="w-full rounded-xl border border-slate-300 px-4 py-3"
                 placeholder="entrada, comunhão, advento"
               />
             </label>
 
             <label className="block mt-4">
-              <span className="block text-sm font-medium mb-2">Observações</span>
+              <span className="block text-sm font-medium mb-2">
+                Observações
+              </span>
               <textarea
                 rows={3}
                 value={form.observacoes}
-                onChange={e => setForm({ ...form, observacoes: e.target.value })}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    observacoes: e.target.value
+                  })
+                }
                 className="w-full rounded-xl border border-slate-300 px-4 py-3"
               />
             </label>
@@ -417,7 +612,9 @@ export default function Musicas() {
         </form>
 
         {carregando ? (
-          <div className="text-slate-500">Carregando músicas...</div>
+          <div className="text-slate-500">
+            Carregando músicas...
+          </div>
         ) : musicas.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
             Nenhuma música cadastrada neste grupo.
@@ -474,7 +671,10 @@ export default function Musicas() {
                     </summary>
 
                     <div className="mt-4">
-                      <AbcScore abc={musica.notacaoAbc} titulo={musica.titulo} />
+                      <AbcScore
+                        abc={musica.notacaoAbc}
+                        titulo={musica.titulo}
+                      />
                     </div>
                   </details>
                 )}

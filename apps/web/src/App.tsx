@@ -16,6 +16,7 @@ import GrupoHome from './pages/GrupoHome';
 import Integrantes from './pages/Integrantes';
 import Convites from './pages/Convites';
 import Musicas from './pages/Musicas';
+import MomentosLiturgicos from './pages/MomentosLiturgicos';
 
 export default function App() {
   return (
@@ -58,6 +59,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Musicas />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/momentos"
+            element={
+              <ProtectedRoute>
+                <MomentosLiturgicos />
               </ProtectedRoute>
             }
           />
