@@ -12,6 +12,7 @@ import { musicRoutes } from './routes/musics.js';
 import { momentoRoutes } from './routes/momentos.js';
 import { missaRoutes } from './routes/missas.js';
 import { publicRoutes } from './routes/public.js';
+import { masterRoutes } from './routes/master.js';
 
 const app = Fastify({ logger: true });
 
@@ -30,6 +31,7 @@ await app.register(musicRoutes);
 await app.register(momentoRoutes);
 await app.register(missaRoutes);
 await app.register(publicRoutes);
+await app.register(masterRoutes);
 
 app.get('/health', async () => ({
   status: 'ok',

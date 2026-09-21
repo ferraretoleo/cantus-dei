@@ -4,6 +4,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const papelGrupoEnum = pgEnum('papel_grupo', ['RESPONSAVEL', 'COORDENADOR', 'MUSICO']);
+export const perfilGlobalEnum = pgEnum('perfil_global', ['USUARIO', 'MASTER']);
 export const conviteStatusEnum = pgEnum('convite_status', ['PENDENTE', 'ACEITO', 'EXPIRADO', 'CANCELADO']);
 export const missaStatusEnum = pgEnum('missa_status', ['RASCUNHO', 'PUBLICADA', 'ARQUIVADA']);
 export const confirmacaoEnum = pgEnum('confirmacao_status', ['PENDENTE', 'CONFIRMADO', 'AUSENTE']);
@@ -19,6 +20,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   senhaHash: text('senha_hash').notNull(),
   telefone: varchar('telefone', { length: 30 }),
+  perfilGlobal: perfilGlobalEnum('perfil_global').default('USUARIO').notNull(),
   ativo: boolean('ativo').default(true).notNull(),
   ...timestamps
 });

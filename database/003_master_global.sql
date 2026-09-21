@@ -7,7 +7,8 @@ END $$;
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS perfil_global perfil_global NOT NULL DEFAULT 'USUARIO';
 
--- Opcional, promoção manual:
+-- Depois troque pelo e-mail real do seu login:
 -- UPDATE users
--- SET perfil_global = 'MASTER', updated_at = now()
--- WHERE lower(email) = lower('SEU_EMAIL_AQUI');
+-- SET perfil_global = 'MASTER',
+--     updated_at = now()
+-- WHERE lower(email) = lower('SEU_EMAIL_DE_LOGIN');

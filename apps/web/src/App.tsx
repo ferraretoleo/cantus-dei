@@ -7,6 +7,7 @@ import {
 
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import MasterRoute from './components/MasterRoute';
 
 import Login from './pages/Login';
 import Registrar from './pages/Registrar';
@@ -22,6 +23,7 @@ import Calendario from './pages/Calendario';
 import MissaEditor from './pages/MissaEditor';
 import CelebracaoPublica from './pages/CelebracaoPublica';
 import ModoPalco from './pages/ModoPalco';
+import MasterAdmin from './pages/MasterAdmin';
 
 export default function App() {
   return (
@@ -36,6 +38,15 @@ export default function App() {
 
           <Route path="/celebracao/:token" element={<CelebracaoPublica />} />
           <Route path="/celebracao/:token/palco" element={<ModoPalco />} />
+
+          <Route
+            path="/master"
+            element={
+              <MasterRoute>
+                <MasterAdmin />
+              </MasterRoute>
+            }
+          />
 
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/grupos/novo" element={<ProtectedRoute><NovoGrupo /></ProtectedRoute>} />

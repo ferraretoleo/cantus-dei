@@ -9,6 +9,7 @@ type User = {
   id: string;
   nome: string;
   email: string;
+  perfilGlobal: 'USUARIO' | 'MASTER';
 };
 
 type AuthContextType = {
@@ -54,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error('useAuth deve ser usado dentro de AuthProvider');
   }
+
   return context;
 }

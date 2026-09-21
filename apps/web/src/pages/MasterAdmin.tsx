@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -15,7 +14,6 @@ type Usuario = {
 
 export default function MasterAdmin() {
   const { user } = useAuth();
-
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [erro, setErro] = useState('');
   const [mensagem, setMensagem] = useState('');

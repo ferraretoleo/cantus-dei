@@ -5,6 +5,11 @@ import { loginSchema, registerSchema } from '@cantus-dei/shared';
 import { db } from '../db/client.js';
 import { users } from '../db/schema.js';
 
+function deveSerMaster(email: string) {
+  const masterEmail = process.env.MASTER_EMAIL?.trim().toLowerCase();
+  return !!masterEmail && email.toLowerCase() === masterEmail;
+}
+
 export async function authRoutes(app: FastifyInstance) {
   app.post('/auth/registrar', async (request, reply) => {
     const parsed = registerSchema.safeParse(request.body);
@@ -39,12 +44,14 @@ export async function authRoutes(app: FastifyInstance) {
         nome: parsed.data.nome,
         email,
         telefone: parsed.data.telefone,
-        senhaHash
+        senhaHash,
+        perfilGlobal: deveSerMaster(email) ? 'MASTER' : 'USUARIO'
       })
       .returning({
         id: users.id,
         nome: users.nome,
-        email: users.email
+        email: users.email,
+        perfilGlobal: users.perfilGlobal
       });
 
     const token = app.jwt.sign(
@@ -65,10 +72,12 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    const [user] = await db
+    const email = parsed.data.email.toLowerCase();
+
+    let [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, parsed.data.email.toLowerCase()))
+      .where(eq(users.email, email))
       .limit(1);
 
     if (
@@ -82,6 +91,19 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
+    if (deveSerMaster(email) && user.perfilGlobal !== 'MASTER') {
+      const [promovido] = await db
+        .update(users)
+        .set({
+          perfilGlobal: 'MASTER',
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+
+      user = promovido;
+    }
+
     const token = app.jwt.sign(
       { sub: user.id, email: user.email },
       { expiresIn: '12h' }
@@ -92,7 +114,8 @@ export async function authRoutes(app: FastifyInstance) {
       user: {
         id: user.id,
         nome: user.nome,
-        email: user.email
+        email: user.email,
+        perfilGlobal: user.perfilGlobal
       }
     };
   });
