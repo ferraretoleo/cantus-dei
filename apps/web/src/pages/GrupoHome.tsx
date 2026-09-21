@@ -1,6 +1,8 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
 import PsalmHighlight from '../components/PsalmHighlight';
+import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 
 const atalhos = [
   {
@@ -37,10 +39,46 @@ const atalhos = [
 
 export default function GrupoHome() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const grupo = getGrupoAtivo();
 
   if (!grupo || grupo.slug !== slug) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  const grupoAtual = grupo;
+
+  const podeExcluir =
+    grupoAtual.papel === 'RESPONSAVEL' ||
+    user?.perfilGlobal === 'MASTER';
+
+  async function excluirGrupo() {
+    const digitado = window.prompt(
+      `Esta ação é definitiva e apagará o grupo, repertórios, celebrações, convites e vínculos.\n\nDigite exatamente "${grupoAtual.nome}" para confirmar:`
+    );
+
+    if (digitado !== grupoAtual.nome) {
+      if (digitado !== null) {
+        window.alert('O nome digitado não confere. Exclusão cancelada.');
+      }
+      return;
+    }
+
+    try {
+      await api(`/grupos/${grupoAtual.id}`, {
+        method: 'DELETE'
+      });
+
+      localStorage.removeItem('cantus_grupo_ativo');
+      navigate('/dashboard', { replace: true });
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir grupo.'
+      );
+    }
   }
 
   return (
@@ -55,13 +93,13 @@ export default function GrupoHome() {
             </div>
 
             <h1 className="cantus-display mt-5 text-5xl sm:text-6xl leading-[.95]">
-              {grupo.nome}
+              {grupoAtual.nome}
             </h1>
 
             <p className="mt-4 text-lg cantus-muted">
-              {grupo.paroquia}
+              {grupoAtual.paroquia}
               <span className="mx-2 cantus-gold">·</span>
-              {grupo.cidade}
+              {grupoAtual.cidade}
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -130,7 +168,7 @@ export default function GrupoHome() {
               </div>
 
               <div className="cantus-display mt-4 text-3xl">
-                {grupo.papel}
+                {grupoAtual.papel}
               </div>
 
               <p className="mt-3 text-sm leading-6 cantus-muted">
@@ -138,6 +176,29 @@ export default function GrupoHome() {
                 por esse papel.
               </p>
             </div>
+
+            {podeExcluir && (
+              <div className="cantus-card mt-5 p-6 border-red-500/20">
+                <div className="text-xs font-extrabold uppercase tracking-[.18em] text-red-300">
+                  Zona de atenção
+                </div>
+
+                <h3 className="cantus-display mt-3 text-2xl">
+                  Excluir grupo
+                </h3>
+
+                <p className="mt-3 text-sm leading-6 cantus-muted">
+                  A exclusão é definitiva e remove os dados vinculados a este grupo.
+                </p>
+
+                <button
+                  onClick={excluirGrupo}
+                  className="cantus-danger mt-5 px-5 py-2.5 text-sm"
+                >
+                  Excluir este grupo
+                </button>
+              </div>
+            )}
           </aside>
         </div>
       </section>

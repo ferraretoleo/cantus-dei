@@ -12,20 +12,37 @@ type Usuario = {
   ativo: boolean;
 };
 
+type Grupo = {
+  id: string;
+  nome: string;
+  paroquia: string;
+  cidade: string;
+  slug: string;
+  ativo: boolean;
+};
+
 export default function MasterAdmin() {
   const { user } = useAuth();
+
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [erro, setErro] = useState('');
   const [mensagem, setMensagem] = useState('');
 
   async function carregar() {
     try {
-      setUsuarios(await api('/master/usuarios'));
+      const [listaUsuarios, listaGrupos] = await Promise.all([
+        api('/master/usuarios'),
+        api('/master/grupos')
+      ]);
+
+      setUsuarios(listaUsuarios);
+      setGrupos(listaGrupos);
     } catch (error) {
       setErro(
         error instanceof Error
           ? error.message
-          : 'Erro ao carregar usuários.'
+          : 'Erro ao carregar administração.'
       );
     }
   }
@@ -72,6 +89,50 @@ export default function MasterAdmin() {
     }
   }
 
+  async function excluirGrupo(grupo: Grupo) {
+    const digitado = window.prompt(
+      `A exclusão é definitiva.\n\nDigite exatamente "${grupo.nome}" para excluir o grupo:`
+    );
+
+    if (digitado !== grupo.nome) {
+      if (digitado !== null) {
+        window.alert('O nome digitado não confere. Exclusão cancelada.');
+      }
+      return;
+    }
+
+    setErro('');
+    setMensagem('');
+
+    try {
+      await api(`/grupos/${grupo.id}`, {
+        method: 'DELETE'
+      });
+
+      const ativo = localStorage.getItem('cantus_grupo_ativo');
+
+      if (ativo) {
+        try {
+          const grupoAtivo = JSON.parse(ativo);
+          if (grupoAtivo?.id === grupo.id) {
+            localStorage.removeItem('cantus_grupo_ativo');
+          }
+        } catch {
+          localStorage.removeItem('cantus_grupo_ativo');
+        }
+      }
+
+      setMensagem(`Grupo "${grupo.nome}" excluído.`);
+      await carregar();
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir grupo.'
+      );
+    }
+  }
+
   return (
     <main className="cantus-page">
       <header className="border-b border-white/10 bg-[#0b0c0e]/90">
@@ -97,14 +158,14 @@ export default function MasterAdmin() {
         </div>
 
         <h1 className="cantus-section-title mt-3">
-          Usuários do
+          Gestão do
           <span className="cantus-gold">
             {' '}Cantus Dei.
           </span>
         </h1>
 
         <p className="mt-3 cantus-muted">
-          Promova ou remova perfis MASTER sem misturar com os papéis dos grupos.
+          Controle usuários MASTER e grupos cadastrados.
         </p>
 
         {erro && (
@@ -119,7 +180,11 @@ export default function MasterAdmin() {
           </div>
         )}
 
-        <div className="cantus-card mt-7 overflow-hidden">
+        <div className="cantus-eyebrow mt-9">
+          Usuários
+        </div>
+
+        <div className="cantus-card mt-4 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="cantus-table w-full text-left">
               <thead>
@@ -188,6 +253,71 @@ export default function MasterAdmin() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="cantus-eyebrow mt-10">
+          Grupos
+        </div>
+
+        <h2 className="cantus-display mt-3 text-3xl">
+          Grupos cadastrados
+        </h2>
+
+        <div className="cantus-card mt-4 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="cantus-table w-full text-left">
+              <thead>
+                <tr>
+                  <th className="px-5 py-4">Grupo</th>
+                  <th className="px-5 py-4">Local</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Ação</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {grupos.map(grupo => (
+                  <tr key={grupo.id}>
+                    <td className="px-5 py-4">
+                      <div className="cantus-display text-lg">
+                        {grupo.nome}
+                      </div>
+                      <div className="mt-1 text-sm cantus-muted">
+                        {grupo.paroquia}
+                      </div>
+                    </td>
+
+                    <td className="px-5 py-4 text-sm cantus-muted">
+                      {grupo.cidade}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span className="cantus-badge">
+                        {grupo.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        onClick={() => excluirGrupo(grupo)}
+                        className="cantus-danger px-4 py-2 text-sm"
+                      >
+                        Excluir grupo
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {!grupos.length && (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center cantus-muted">
+                      Nenhum grupo cadastrado.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

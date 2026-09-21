@@ -3,7 +3,7 @@ import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/client.js';
-import { users } from '../db/schema.js';
+import { grupos, users } from '../db/schema.js';
 
 const perfilSchema = z.object({
   perfilGlobal: z.enum(['USUARIO', 'MASTER'])
@@ -49,6 +49,25 @@ export async function masterRoutes(app: FastifyInstance) {
         })
         .from(users)
         .orderBy(asc(users.nome));
+    }
+  );
+
+  app.get(
+    '/master/grupos',
+    { preHandler: requireMaster },
+    async () => {
+      return db
+        .select({
+          id: grupos.id,
+          nome: grupos.nome,
+          paroquia: grupos.paroquia,
+          cidade: grupos.cidade,
+          slug: grupos.slug,
+          ativo: grupos.ativo,
+          createdAt: grupos.createdAt
+        })
+        .from(grupos)
+        .orderBy(asc(grupos.nome));
     }
   );
 

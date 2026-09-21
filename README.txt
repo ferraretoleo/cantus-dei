@@ -1,18 +1,28 @@
-CORREÇÃO FINAL - CONVITES
+CORREÇÃO TS18047 - GrupoHome.tsx
 
-Corrige o erro:
-TS18047: 'grupo' is possibly 'null'
+O TypeScript não preserva a garantia de que 'grupo' não é null dentro
+da função assíncrona excluirGrupo().
 
-Arquivo corrigido:
-apps/web/src/pages/Convites.tsx
+A correção cria:
+const grupoAtual = grupo;
 
-Extraia na raiz:
+logo após a validação:
+
+if (!grupo || grupo.slug !== slug) {
+  return <Navigate to="/dashboard" replace />;
+}
+
+Depois todas as referências usam grupoAtual.
+
+APLICAÇÃO
+
+1. Extraia por cima de:
 D:\GitHub\cantus-dei
 
-Depois execute:
+2. Execute:
 npm run build
 
-Se concluir sem erros:
+3. Se passar:
 git add .
-git commit -m "Corrige tipagem da tela de convites"
+git commit -m "Corrige tipagem na exclusao de grupo"
 git push origin main

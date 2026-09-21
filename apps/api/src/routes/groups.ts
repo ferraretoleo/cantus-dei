@@ -78,6 +78,82 @@ export async function groupRoutes(app: FastifyInstance) {
     }
   });
 
+  app.delete(
+    '/grupos/:id',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const grupoId = (request.params as { id: string }).id;
+
+      const [usuario] = await db
+        .select({
+          perfilGlobal: users.perfilGlobal
+        })
+        .from(users)
+        .where(eq(users.id, request.user.sub))
+        .limit(1);
+
+      if (!usuario) {
+        return reply.code(401).send({
+          error: 'UNAUTHORIZED',
+          message: 'Usuário não encontrado.'
+        });
+      }
+
+      let autorizado = usuario.perfilGlobal === 'MASTER';
+
+      if (!autorizado) {
+        const [membro] = await db
+          .select({
+            papel: grupoMembros.papel
+          })
+          .from(grupoMembros)
+          .where(
+            and(
+              eq(grupoMembros.grupoId, grupoId),
+              eq(grupoMembros.userId, request.user.sub),
+              eq(grupoMembros.ativo, true)
+            )
+          )
+          .limit(1);
+
+        autorizado = membro?.papel === 'RESPONSAVEL';
+      }
+
+      if (!autorizado) {
+        return reply.code(403).send({
+          error: 'FORBIDDEN',
+          message: 'Somente o MASTER global ou o RESPONSÁVEL pelo grupo pode excluí-lo.'
+        });
+      }
+
+      const [grupo] = await db
+        .select({
+          id: grupos.id,
+          nome: grupos.nome
+        })
+        .from(grupos)
+        .where(eq(grupos.id, grupoId))
+        .limit(1);
+
+      if (!grupo) {
+        return reply.code(404).send({
+          error: 'NOT_FOUND',
+          message: 'Grupo não encontrado.'
+        });
+      }
+
+      await db
+        .delete(grupos)
+        .where(eq(grupos.id, grupoId));
+
+      return {
+        ok: true,
+        id: grupo.id,
+        nome: grupo.nome
+      };
+    }
+  );
+
   app.get(
     '/grupos/:id/membros',
     { preHandler: (req, rep) => app.requireGroupAccess(req, rep) },
