@@ -5,7 +5,6 @@ import {
 
 export const papelGrupoEnum = pgEnum('papel_grupo', ['RESPONSAVEL', 'COORDENADOR', 'MUSICO']);
 export const conviteStatusEnum = pgEnum('convite_status', ['PENDENTE', 'ACEITO', 'EXPIRADO', 'CANCELADO']);
-export const partituraTipoEnum = pgEnum('partitura_tipo', ['PDF', 'IMAGEM', 'MIDI', 'MUSICXML']);
 export const missaStatusEnum = pgEnum('missa_status', ['RASCUNHO', 'PUBLICADA', 'ARQUIVADA']);
 export const confirmacaoEnum = pgEnum('confirmacao_status', ['PENDENTE', 'CONFIRMADO', 'AUSENTE']);
 
@@ -18,9 +17,8 @@ export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   nome: varchar('nome', { length: 120 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  senhaHash: text('senha_hash'),
+  senhaHash: text('senha_hash').notNull(),
   telefone: varchar('telefone', { length: 30 }),
-  avatarUrl: text('avatar_url'),
   ativo: boolean('ativo').default(true).notNull(),
   ...timestamps
 });
@@ -33,7 +31,6 @@ export const grupos = pgTable('grupos', {
   slug: varchar('slug', { length: 80 }).notNull().unique(),
   corTema: varchar('cor_tema', { length: 7 }).default('#7C3AED').notNull(),
   ativo: boolean('ativo').default(true).notNull(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true }),
   ...timestamps
 });
 
@@ -46,10 +43,7 @@ export const grupoMembros = pgTable('grupo_membros', {
   ativo: boolean('ativo').default(true).notNull(),
   entrouEm: timestamp('entrou_em', { withTimezone: true }).defaultNow().notNull(),
   ...timestamps
-}, t => [
-  primaryKey({ columns: [t.grupoId, t.userId] }),
-  index('grupo_membros_user_ativo_idx').on(t.userId, t.ativo)
-]);
+}, t => [primaryKey({ columns: [t.grupoId, t.userId] })]);
 
 export const convites = pgTable('convites', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -62,7 +56,7 @@ export const convites = pgTable('convites', {
   status: conviteStatusEnum('status').default('PENDENTE').notNull(),
   convidadoPor: uuid('convidado_por').notNull().references(() => users.id),
   ...timestamps
-}, t => [index('convites_grupo_status_idx').on(t.grupoId, t.status)]);
+});
 
 export const momentos = pgTable('momentos', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -97,20 +91,6 @@ export const musicaMomentos = pgTable('musica_momentos', {
   momentoId: uuid('momento_id').notNull().references(() => momentos.id, { onDelete: 'cascade' })
 }, t => [primaryKey({ columns: [t.musicaId, t.momentoId] })]);
 
-export const partituras = pgTable('partituras', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  musicaId: uuid('musica_id').notNull().references(() => musicas.id, { onDelete: 'cascade' }),
-  tipo: partituraTipoEnum('tipo').notNull(),
-  instrumento: varchar('instrumento', { length: 80 }).default('Geral').notNull(),
-  tom: varchar('tom', { length: 20 }),
-  versao: varchar('versao', { length: 80 }),
-  arquivoKey: text('arquivo_key').notNull(),
-  tamanho: integer('tamanho'),
-  mime: varchar('mime', { length: 120 }),
-  enviadoPor: uuid('enviado_por').notNull().references(() => users.id),
-  ...timestamps
-});
-
 export const missas = pgTable('missas', {
   id: uuid('id').defaultRandom().primaryKey(),
   grupoId: uuid('grupo_id').notNull().references(() => grupos.id, { onDelete: 'cascade' }),
@@ -134,10 +114,9 @@ export const missaMusicas = pgTable('missa_musicas', {
   momentoId: uuid('momento_id').notNull().references(() => momentos.id),
   ordem: integer('ordem').notNull(),
   tomDaExecucao: varchar('tom_da_execucao', { length: 20 }),
-  partituraId: uuid('partitura_id').references(() => partituras.id),
   observacao: text('observacao'),
   ...timestamps
-}, t => [unique('missa_momento_ordem_unq').on(t.missaId, t.momentoId, t.ordem)]);
+});
 
 export const missaEscala = pgTable('missa_escala', {
   missaId: uuid('missa_id').notNull().references(() => missas.id, { onDelete: 'cascade' }),

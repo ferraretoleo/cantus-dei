@@ -8,14 +8,12 @@ export default function AbcScore({
   abc: string;
   titulo: string;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current || !abc.trim()) return;
-
-    containerRef.current.innerHTML = '';
-
-    ABCJS.renderAbc(containerRef.current, abc, {
+    if (!ref.current || !abc.trim()) return;
+    ref.current.innerHTML = '';
+    ABCJS.renderAbc(ref.current, abc, {
       responsive: 'resize',
       add_classes: true,
       staffwidth: 760
@@ -23,63 +21,38 @@ export default function AbcScore({
   }, [abc]);
 
   function imprimir() {
-    if (!containerRef.current) return;
+    if (!ref.current) return;
 
-    const conteudo = containerRef.current.innerHTML;
-    const janela = window.open('', '_blank', 'width=900,height=700');
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) return;
 
-    if (!janela) return;
-
-    janela.document.write(`
-      <!doctype html>
+    w.document.write(`
       <html>
         <head>
-          <meta charset="utf-8">
           <title>${titulo}</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 30px;
-              color: #111;
-            }
-            h1 {
-              font-size: 22px;
-              margin-bottom: 25px;
-            }
-            svg {
-              max-width: 100%;
-              height: auto;
-            }
-            @media print {
-              button { display: none; }
-            }
+            body{font-family:Arial;margin:30px;color:#111}
+            svg{max-width:100%;height:auto}
           </style>
         </head>
         <body>
-          <h1>${titulo}</h1>
-          ${conteudo}
-          <script>
-            window.onload = () => {
-              window.print();
-            };
-          </script>
+          <h2>${titulo}</h2>
+          ${ref.current.innerHTML}
+          <script>window.onload=()=>window.print()</script>
         </body>
       </html>
     `);
 
-    janela.document.close();
+    w.document.close();
   }
 
-  if (!abc.trim()) return null;
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div ref={containerRef} className="overflow-x-auto" />
-
+    <div>
+      <div ref={ref} className="overflow-x-auto" />
       <button
         type="button"
         onClick={imprimir}
-        className="mt-4 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold"
+        className="mt-3 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold"
       >
         Imprimir partitura
       </button>

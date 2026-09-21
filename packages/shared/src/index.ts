@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 export const papelGrupoSchema = z.enum(['RESPONSAVEL', 'COORDENADOR', 'MUSICO']);
-export type PapelGrupo = z.infer<typeof papelGrupoSchema>;
 
 export const registerSchema = z.object({
   nome: z.string().min(2).max(120),
@@ -27,13 +26,11 @@ export const createConviteSchema = z.object({
   email: z.string().email().optional(),
   telefone: z.string().min(8).max(30).optional(),
   papelProposto: papelGrupoSchema.default('MUSICO')
-}).refine(v => v.email || v.telefone, { message: 'Informe e-mail ou telefone.' });
-
-export const acceptConviteSchema = z.object({
-  token: z.string().min(20)
+}).refine(v => v.email || v.telefone, {
+  message: 'Informe e-mail ou telefone.'
 });
 
-export const createMusicaSchema = z.object({
+export const musicaSchema = z.object({
   titulo: z.string().min(2).max(220),
   autorCompositor: z.string().max(220).optional().nullable(),
   tomOriginal: z.string().max(20).optional().nullable(),
@@ -48,4 +45,35 @@ export const createMusicaSchema = z.object({
   compartilhada: z.boolean().default(false)
 });
 
-export const updateMusicaSchema = createMusicaSchema.partial();
+export const momentoSchema = z.object({
+  nome: z.string().min(2).max(120),
+  ordemLiturgica: z.number().int().min(1).max(999).optional()
+});
+
+export const missaSchema = z.object({
+  dataHora: z.string().min(10),
+  local: z.string().min(2).max(180),
+  tipoCelebracao: z.string().min(2).max(80),
+  tempoLiturgico: z.string().max(40).optional().nullable(),
+  observacoes: z.string().optional().nullable()
+});
+
+export const repertorioSchema = z.object({
+  itens: z.array(z.object({
+    momentoId: z.string().uuid(),
+    musicaId: z.string().uuid(),
+    tomDaExecucao: z.string().max(20).optional().nullable(),
+    observacao: z.string().optional().nullable()
+  })).max(50)
+});
+
+export const escalaSchema = z.object({
+  itens: z.array(z.object({
+    userId: z.string().uuid(),
+    instrumentoVoz: z.string().max(100).optional().nullable()
+  })).max(100)
+});
+
+export const confirmacaoSchema = z.object({
+  confirmacao: z.enum(['CONFIRMADO', 'AUSENTE'])
+});

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 
-function criarSlug(texto: string) {
+function slugify(texto: string) {
   return texto
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -13,137 +13,56 @@ function criarSlug(texto: string) {
 
 export default function NovoGrupo() {
   const navigate = useNavigate();
-
-  const [nome, setNome] = useState('');
-  const [paroquia, setParoquia] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [corTema, setCorTema] = useState('#7C3AED');
+  const [form, setForm] = useState({ nome: '', paroquia: '', cidade: '', corTema: '#7C3AED' });
   const [erro, setErro] = useState('');
-  const [carregando, setCarregando] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-
-    setErro('');
-    setCarregando(true);
 
     try {
       const grupo = await api('/grupos', {
         method: 'POST',
-        body: JSON.stringify({
-          nome,
-          paroquia,
-          cidade,
-          slug: criarSlug(nome),
-          corTema
-        })
+        body: JSON.stringify({ ...form, slug: slugify(form.nome) })
       });
 
-      localStorage.setItem(
-        'cantus_grupo_ativo',
-        JSON.stringify(grupo)
-      );
-
-      navigate('/dashboard');
+      localStorage.setItem('cantus_grupo_ativo', JSON.stringify(grupo));
+      navigate(`/g/${grupo.slug}`);
     } catch (error) {
-      setErro(
-        error instanceof Error
-          ? error.message
-          : 'Erro ao criar grupo.'
-      );
-    } finally {
-      setCarregando(false);
+      setErro(error instanceof Error ? error.message : 'Erro ao criar grupo.');
     }
   }
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-xl mx-auto pt-10">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-sm text-slate-500 mb-6"
-        >
-          Voltar
-        </button>
+      <form onSubmit={submit} className="max-w-xl mx-auto mt-8 bg-white border border-slate-200 rounded-3xl p-8">
+        <button type="button" onClick={() => navigate('/dashboard')} className="text-sm text-violet-700 font-semibold">Voltar</button>
+        <h1 className="mt-5 text-3xl font-bold">Novo grupo</h1>
 
-        <div className="bg-white rounded-3xl border border-slate-200 p-8">
-          <h1 className="text-3xl font-bold">
-            Novo grupo
-          </h1>
+        {[
+          ['nome', 'Nome do grupo'],
+          ['paroquia', 'Paróquia'],
+          ['cidade', 'Cidade']
+        ].map(([key, label]) => (
+          <label className="block mt-5" key={key}>
+            <span className="text-sm font-medium">{label}</span>
+            <input
+              required
+              value={(form as Record<string,string>)[key]}
+              onChange={e => setForm({ ...form, [key]: e.target.value })}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+            />
+          </label>
+        ))}
 
-          <p className="text-slate-500 mt-2 mb-8">
-            Cadastre seu grupo de música litúrgica
-          </p>
+        <label className="block mt-5">
+          <span className="text-sm font-medium">Cor do grupo</span>
+          <input type="color" value={form.corTema} onChange={e => setForm({ ...form, corTema: e.target.value })} className="mt-2 block h-10" />
+        </label>
 
-          <form onSubmit={handleSubmit}>
-            <label className="block mb-4">
-              <span className="block text-sm font-medium mb-2">
-                Nome do grupo
-              </span>
+        {erro && <div className="mt-4 bg-red-50 text-red-700 p-3 rounded-xl">{erro}</div>}
 
-              <input
-                required
-                value={nome}
-                onChange={e => setNome(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-
-            <label className="block mb-4">
-              <span className="block text-sm font-medium mb-2">
-                Paróquia
-              </span>
-
-              <input
-                required
-                value={paroquia}
-                onChange={e => setParoquia(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-
-            <label className="block mb-4">
-              <span className="block text-sm font-medium mb-2">
-                Cidade
-              </span>
-
-              <input
-                required
-                value={cidade}
-                onChange={e => setCidade(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-
-            <label className="block mb-6">
-              <span className="block text-sm font-medium mb-2">
-                Cor do grupo
-              </span>
-
-              <input
-                type="color"
-                value={corTema}
-                onChange={e => setCorTema(e.target.value)}
-              />
-            </label>
-
-            {erro && (
-              <div className="mb-5 rounded-xl bg-red-50 text-red-700 p-3 text-sm">
-                {erro}
-              </div>
-            )}
-
-            <button
-              disabled={carregando}
-              className="w-full rounded-xl bg-violet-700 text-white py-3 font-semibold"
-            >
-              {carregando
-                ? 'Criando...'
-                : 'Criar grupo'}
-            </button>
-          </form>
-        </div>
-      </div>
+        <button className="mt-6 w-full rounded-xl bg-violet-700 text-white py-3 font-semibold">Criar grupo</button>
+      </form>
     </main>
   );
 }

@@ -23,12 +23,7 @@ for (let i = 0; i < seed.length; i++) {
   const existente = await db
     .select({ id: momentos.id })
     .from(momentos)
-    .where(
-      and(
-        eq(momentos.slug, slug),
-        isNull(momentos.grupoId)
-      )
-    )
+    .where(and(eq(momentos.slug, slug), isNull(momentos.grupoId)))
     .limit(1);
 
   if (!existente.length) {
@@ -41,4 +36,4 @@ for (let i = 0; i < seed.length; i++) {
   }
 }
 
-console.log('Momentos litúrgicos globais carregados.');
+console.log('Momentos litúrgicos carregados.');

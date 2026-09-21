@@ -1,0 +1,92 @@
+CANTUS DEI COMPLETO
+
+Este ZIP é substitutivo.
+
+1. Faça backup da pasta atual:
+D:\GitHub\cantus-dei
+
+2. Preserve a pasta .git e substitua todo o restante pelo conteúdo deste ZIP.
+
+3. No Neon SQL Editor execute:
+database\full-schema.sql
+
+4. Na raiz:
+npm install
+
+5. Build completo:
+npm run build
+
+6. Crie apps\api\.env:
+
+DATABASE_URL=SUA_URL_NEON
+JWT_SECRET=UMA_CHAVE_LONGA
+PUBLIC_BASE_URL=http://localhost:5173
+CORS_ORIGIN=http://localhost:5173
+PORT=3000
+
+7. Teste local:
+
+Terminal 1:
+npm run dev:api
+
+Terminal 2:
+npm run dev:web
+
+8. Publique:
+
+git add .
+git commit -m "Publica Cantus Dei completo"
+git push origin main
+
+RENDER
+
+Build:
+npm install && npm run build -w @cantus-dei/shared && npm run build -w @cantus-dei/api
+
+Start:
+npm run start -w @cantus-dei/api
+
+Variáveis:
+DATABASE_URL
+JWT_SECRET
+PUBLIC_BASE_URL=https://site.cantus-dei.workers.dev
+CORS_ORIGIN=https://site.cantus-dei.workers.dev
+
+CLOUDFLARE
+
+Build:
+npm install && npm run build -w @cantus-dei/shared && npm run build -w @cantus-dei/web
+
+Deploy:
+npx wrangler deploy --cwd apps/web
+
+Variável:
+VITE_API_URL=https://cantus-dei-api.onrender.com
+
+FUNCIONALIDADES
+
+Cadastro
+Login
+Grupos
+Papéis
+Integrantes
+Convites
+Aceite de convite
+Músicas
+Letra
+Cifra
+ABC Notation
+Impressão de partitura
+Momentos litúrgicos
+Calendário
+Celebrações
+Repertório por momento
+Tom de execução
+Escala
+Confirmação
+Publicação
+Link público
+QR Code
+WhatsApp
+Página pública
+Modo palco

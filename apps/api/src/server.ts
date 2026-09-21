@@ -10,6 +10,8 @@ import { groupRoutes } from './routes/groups.js';
 import { inviteRoutes } from './routes/invites.js';
 import { musicRoutes } from './routes/musics.js';
 import { momentoRoutes } from './routes/momentos.js';
+import { missaRoutes } from './routes/missas.js';
+import { publicRoutes } from './routes/public.js';
 
 const app = Fastify({ logger: true });
 
@@ -26,6 +28,8 @@ await app.register(groupRoutes);
 await app.register(inviteRoutes);
 await app.register(musicRoutes);
 await app.register(momentoRoutes);
+await app.register(missaRoutes);
+await app.register(publicRoutes);
 
 app.get('/health', async () => ({
   status: 'ok',
@@ -53,7 +57,9 @@ app.setErrorHandler((error, _request, reply) => {
 
   reply.code(statusCode).send({
     error: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR',
-    message: statusCode >= 500 ? 'Erro interno do servidor.' : message
+    message: statusCode >= 500
+      ? 'Erro interno do servidor.'
+      : message
   });
 });
 

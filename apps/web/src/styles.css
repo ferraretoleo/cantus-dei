@@ -2,7 +2,9 @@
 
 :root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  color: #231b2e;
-  background: #f6f3fb;
+  color: #1e293b;
+  background: #f8fafc;
 }
+
 body { margin: 0; }
+button, a, input, select, textarea { transition: all .15s ease; }

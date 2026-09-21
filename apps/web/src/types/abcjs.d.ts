@@ -1,4 +1,1 @@
-declare module 'abcjs' {
-  const ABCJS: any;
-  export default ABCJS;
-}
+declare module 'abcjs' { const ABCJS: any; export default ABCJS; }
