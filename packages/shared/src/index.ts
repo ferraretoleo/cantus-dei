@@ -29,4 +29,23 @@ export const createConviteSchema = z.object({
   papelProposto: papelGrupoSchema.default('MUSICO')
 }).refine(v => v.email || v.telefone, { message: 'Informe e-mail ou telefone.' });
 
-export const acceptConviteSchema = z.object({ token: z.string().min(20) });
+export const acceptConviteSchema = z.object({
+  token: z.string().min(20)
+});
+
+export const createMusicaSchema = z.object({
+  titulo: z.string().min(2).max(220),
+  autorCompositor: z.string().max(220).optional().nullable(),
+  tomOriginal: z.string().max(20).optional().nullable(),
+  andamentoBpm: z.number().int().min(1).max(400).optional().nullable(),
+  tempoCompasso: z.string().max(20).optional().nullable(),
+  letra: z.string().optional().nullable(),
+  cifra: z.string().optional().nullable(),
+  notacaoAbc: z.string().optional().nullable(),
+  videoUrl: z.string().url().optional().nullable().or(z.literal('')),
+  tags: z.array(z.string().min(1).max(60)).max(30).default([]),
+  observacoes: z.string().optional().nullable(),
+  compartilhada: z.boolean().default(false)
+});
+
+export const updateMusicaSchema = createMusicaSchema.partial();

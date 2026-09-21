@@ -15,17 +15,14 @@ import NovoGrupo from './pages/NovoGrupo';
 import GrupoHome from './pages/GrupoHome';
 import Integrantes from './pages/Integrantes';
 import Convites from './pages/Convites';
+import Musicas from './pages/Musicas';
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route
-            path="/"
-            element={<Navigate to="/login" replace />}
-          />
-
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registrar" element={<Registrar />} />
 
@@ -52,6 +49,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <GrupoHome />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/musicas"
+            element={
+              <ProtectedRoute>
+                <Musicas />
               </ProtectedRoute>
             }
           />

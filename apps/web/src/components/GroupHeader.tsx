@@ -55,30 +55,21 @@ export default function GroupHeader() {
           </div>
 
           <nav className="hidden md:flex items-center gap-1">
-            <Link
-              to={`/g/${grupo.slug}`}
-              className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100"
-            >
+            <Link to={`/g/${grupo.slug}`} className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100">
               Início
             </Link>
 
-            <Link
-              to={`/g/${grupo.slug}/integrantes`}
-              className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100"
-            >
+            <Link to={`/g/${grupo.slug}/musicas`} className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100">
+              Músicas
+            </Link>
+
+            <Link to={`/g/${grupo.slug}/integrantes`} className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100">
               Integrantes
             </Link>
 
-            <Link
-              to={`/g/${grupo.slug}/convites`}
-              className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100"
-            >
+            <Link to={`/g/${grupo.slug}/convites`} className="px-3 py-2 rounded-lg text-sm hover:bg-slate-100">
               Convites
             </Link>
-
-            <span className="px-3 py-2 rounded-lg text-sm text-slate-400">
-              Músicas
-            </span>
 
             <span className="px-3 py-2 rounded-lg text-sm text-slate-400">
               Calendário
@@ -105,24 +96,16 @@ export default function GroupHeader() {
         </div>
 
         <nav className="md:hidden flex gap-2 overflow-x-auto pb-3">
-          <Link
-            to={`/g/${grupo.slug}`}
-            className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100"
-          >
+          <Link to={`/g/${grupo.slug}`} className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100">
             Início
           </Link>
-
-          <Link
-            to={`/g/${grupo.slug}/integrantes`}
-            className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100"
-          >
+          <Link to={`/g/${grupo.slug}/musicas`} className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100">
+            Músicas
+          </Link>
+          <Link to={`/g/${grupo.slug}/integrantes`} className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100">
             Integrantes
           </Link>
-
-          <Link
-            to={`/g/${grupo.slug}/convites`}
-            className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100"
-          >
+          <Link to={`/g/${grupo.slug}/convites`} className="whitespace-nowrap px-3 py-2 rounded-lg text-sm bg-slate-100">
             Convites
           </Link>
         </nav>

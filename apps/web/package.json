@@ -11,6 +11,7 @@
   "dependencies": {
     "@cantus-dei/shared": "*",
     "@vitejs/plugin-react": "^5.0.0",
+    "abcjs": "^6.5.2",
     "vite": "^7.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

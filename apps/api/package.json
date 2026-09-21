@@ -12,6 +12,8 @@
     "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.901.0",
+    "@aws-sdk/s3-request-presigner": "^3.901.0",
     "@cantus-dei/shared": "*",
     "@fastify/cors": "^11.0.0",
     "@fastify/jwt": "^10.0.0",

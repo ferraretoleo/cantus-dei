@@ -8,10 +8,9 @@ import groupGuard from './plugins/group-guard.js';
 import { authRoutes } from './routes/auth.js';
 import { groupRoutes } from './routes/groups.js';
 import { inviteRoutes } from './routes/invites.js';
+import { musicRoutes } from './routes/musics.js';
 
-const app = Fastify({
-  logger: true
-});
+const app = Fastify({ logger: true });
 
 await app.register(cors, {
   origin: process.env.CORS_ORIGIN?.split(',') ?? false,
@@ -24,6 +23,7 @@ await app.register(groupGuard);
 await app.register(authRoutes);
 await app.register(groupRoutes);
 await app.register(inviteRoutes);
+await app.register(musicRoutes);
 
 app.get('/health', async () => ({
   status: 'ok',
@@ -50,15 +50,8 @@ app.setErrorHandler((error, _request, reply) => {
       : 'Erro interno do servidor.';
 
   reply.code(statusCode).send({
-    error:
-      statusCode >= 500
-        ? 'INTERNAL_ERROR'
-        : 'REQUEST_ERROR',
-
-    message:
-      statusCode >= 500
-        ? 'Erro interno do servidor.'
-        : message
+    error: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR',
+    message: statusCode >= 500 ? 'Erro interno do servidor.' : message
   });
 });
 

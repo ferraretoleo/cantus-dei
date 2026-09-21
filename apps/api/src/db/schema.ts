@@ -83,6 +83,7 @@ export const musicas = pgTable('musicas', {
   tempoCompasso: varchar('tempo_compasso', { length: 20 }),
   letra: text('letra'),
   cifra: text('cifra'),
+  notacaoAbc: text('notacao_abc'),
   videoUrl: text('video_url'),
   tags: text('tags').array().default([]),
   observacoes: text('observacoes'),

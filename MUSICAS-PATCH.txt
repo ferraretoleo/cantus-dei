@@ -1,0 +1,21 @@
+ALTERAÇÃO MANUAL EM apps/web/src/pages/Musicas.tsx
+
+1) No import do react-router-dom, inclua Link:
+
+ANTES:
+import { Navigate, useParams } from 'react-router-dom';
+
+DEPOIS:
+import { Link, Navigate, useParams } from 'react-router-dom';
+
+2) Dentro de cada card de música, antes dos botões Editar/Excluir, adicione:
+
+<Link
+  to={`/g/${grupo.slug}/musicas/${musica.id}/partituras`}
+  className="text-sm font-semibold text-violet-700"
+>
+  Partituras
+</Link>
+
+Sugestão: coloque dentro do mesmo bloco:
+<div className="mt-5 flex gap-4">
