@@ -9,7 +9,11 @@ export async function api(
   const token = localStorage.getItem('cantus_token');
   const headers = new Headers(options.headers);
 
-  if (!(options.body instanceof FormData)) {
+  if (
+    options.body !== undefined &&
+    options.body !== null &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -25,7 +29,11 @@ export async function api(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.message || 'Erro ao acessar o servidor.');
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      'Erro ao acessar o servidor.'
+    );
   }
 
   return data;
