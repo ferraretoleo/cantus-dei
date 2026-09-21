@@ -12,6 +12,9 @@ import Login from './pages/Login';
 import Registrar from './pages/Registrar';
 import Dashboard from './pages/Dashboard';
 import NovoGrupo from './pages/NovoGrupo';
+import GrupoHome from './pages/GrupoHome';
+import Integrantes from './pages/Integrantes';
+import Convites from './pages/Convites';
 
 export default function App() {
   return (
@@ -24,11 +27,7 @@ export default function App() {
           />
 
           <Route path="/login" element={<Login />} />
-
-          <Route
-            path="/registrar"
-            element={<Registrar />}
-          />
+          <Route path="/registrar" element={<Registrar />} />
 
           <Route
             path="/dashboard"
@@ -44,6 +43,33 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <NovoGrupo />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug"
+            element={
+              <ProtectedRoute>
+                <GrupoHome />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/integrantes"
+            element={
+              <ProtectedRoute>
+                <Integrantes />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/convites"
+            element={
+              <ProtectedRoute>
+                <Convites />
               </ProtectedRoute>
             }
           />

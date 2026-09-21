@@ -1,15 +1,18 @@
-CORREÇÃO DO BUILD - CANTUS DEI
+CORREÇÃO CANTUS DEI - Convites.tsx
 
-Arquivos incluídos:
-- apps/web/src/components/ProtectedRoute.tsx
-- apps/web/src/vite-env.d.ts
+Corrige:
+TS18047: 'grupo' is possibly 'null'
 
-Copie os arquivos mantendo exatamente essas pastas.
+Aplique na raiz do projeto:
+D:\GitHub\cantus-dei
+
+Arquivo:
+apps/web/src/pages/Convites.tsx
 
 Depois rode:
 npm run build -w @cantus-dei/web
 
 Se compilar:
 git add .
-git commit -m "Corrige build do frontend"
+git commit -m "Corrige tipagem da tela de convites"
 git push origin main
