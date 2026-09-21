@@ -1,7 +1,4 @@
 import 'dotenv/config';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { db, pool } from './client.js';
 
-await migrate(db, { migrationsFolder: './drizzle' });
-await pool.end();
-console.log('Migrations aplicadas.');
+console.log('As migrations do Cantus Dei são gerenciadas pelo Drizzle Kit.');
+console.log('Para aplicar alterações de schema, use: npx drizzle-kit push');
