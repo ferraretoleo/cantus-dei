@@ -15,6 +15,7 @@ import { publicRoutes } from './routes/public.js';
 import { masterRoutes } from './routes/master.js';
 import { paroquiaRoutes } from './routes/paroquias.js';
 import { dashboardRoutes } from './routes/dashboard.js';
+import { parishBrandRoutes } from './routes/parish-brand.js';
 
 const app=Fastify({ logger:true });
 
@@ -37,6 +38,7 @@ await app.register(groupGuard);
 await app.register(authRoutes);
 await app.register(paroquiaRoutes);
 await app.register(dashboardRoutes);
+await app.register(parishBrandRoutes);
 await app.register(groupRoutes);
 await app.register(inviteRoutes);
 await app.register(musicRoutes);

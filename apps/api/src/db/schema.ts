@@ -31,6 +31,7 @@ export const paroquias = pgTable('paroquias', {
   nome: varchar('nome', { length: 160 }).notNull(),
   cidade: varchar('cidade', { length: 120 }).notNull(),
   endereco: varchar('endereco', { length: 240 }),
+  logoData: text('logo_data'),
   ativo: boolean('ativo').default(true).notNull(),
   ...timestamps
 }, t => [unique('paroquias_nome_cidade_unq').on(t.nome,t.cidade)]);

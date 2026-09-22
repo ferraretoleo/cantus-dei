@@ -12,7 +12,7 @@ import {
   useSearchParams
 } from 'react-router-dom';
 
-import QRCode from 'qrcode';
+import { qrComLogo } from '../lib/qrWithLogo';
 
 import GroupHeader, {
   getGrupoAtivo
@@ -153,6 +153,9 @@ export default function Calendario() {
   const [qr,setQr]=
     useState('');
 
+  const [logoParoquia,setLogoParoquia]=
+    useState('');
+
   const [mes,setMes]=
     useState(
       inicioMes(
@@ -197,6 +200,12 @@ export default function Calendario() {
 
   useEffect(()=>{
     carregar();
+
+    if (paroquiaAtiva?.id) {
+      api(`/public/paroquias/${paroquiaAtiva.id}/brand`)
+        .then(data=>setLogoParoquia(data.logoData || ''))
+        .catch(()=>setLogoParoquia(''));
+    }
   },[]);
 
   const publicada=
@@ -253,13 +262,13 @@ export default function Calendario() {
       return;
     }
 
-    QRCode
-      .toDataURL(
-        publicUrl
-      )
+    qrComLogo(
+      publicUrl,
+      logoParoquia || null
+    )
       .then(setQr)
       .catch(()=>setQr(''));
-  },[publicUrl]);
+  },[publicUrl,logoParoquia]);
 
   useEffect(()=>{
     if (
