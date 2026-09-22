@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent
+} from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,7 +43,7 @@ type GrupoAdmin = {
 };
 
 export default function MasterAdmin() {
-  const {user}=useAuth();
+  const { user } = useAuth();
 
   const [usuarios,setUsuarios]=useState<Usuario[]>([]);
   const [paroquias,setParoquias]=useState<Paroquia[]>([]);
@@ -47,17 +52,24 @@ export default function MasterAdmin() {
   const [membros,setMembros]=useState<MembroParoquia[]>([]);
   const [novoUsuarioId,setNovoUsuarioId]=useState('');
   const [novoPapel,setNovoPapel]=useState<'ADMIN_PAROQUIA'|'MEMBRO'>('MEMBRO');
+
   const [formParoquia,setFormParoquia]=useState({
     nome:'',
     cidade:'',
     endereco:''
   });
+
   const [erro,setErro]=useState('');
   const [mensagem,setMensagem]=useState('');
 
   const usuariosDisponiveis=useMemo(()=>{
-    const vinculados=new Set(membros.map(m=>m.userId));
-    return usuarios.filter(u=>!vinculados.has(u.id));
+    const vinculados=new Set(
+      membros.map(m=>m.userId)
+    );
+
+    return usuarios.filter(
+      u=>!vinculados.has(u.id)
+    );
   },[usuarios,membros]);
 
   async function carregarBase() {
@@ -72,11 +84,25 @@ export default function MasterAdmin() {
       setParoquias(p);
       setGrupos(g);
 
-      if (!paroquiaSelecionada && p.length) {
+      if (
+        paroquiaSelecionada &&
+        !p.some((x:Paroquia)=>x.id===paroquiaSelecionada)
+      ) {
+        setParoquiaSelecionada(
+          p.length ? p[0].id : ''
+        );
+      } else if (
+        !paroquiaSelecionada &&
+        p.length
+      ) {
         setParoquiaSelecionada(p[0].id);
       }
     } catch (error) {
-      setErro(error instanceof Error?error.message:'Erro ao carregar administração.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao carregar administração.'
+      );
     }
   }
 
@@ -87,147 +113,403 @@ export default function MasterAdmin() {
     }
 
     try {
-      setMembros(await api(`/master/paroquias/${id}/membros`));
+      setMembros(
+        await api(
+          `/master/paroquias/${id}/membros`
+        )
+      );
     } catch (error) {
-      setErro(error instanceof Error?error.message:'Erro ao carregar membros.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao carregar membros.'
+      );
     }
   }
 
-  useEffect(()=>{ carregarBase(); },[]);
-  useEffect(()=>{ carregarMembros(paroquiaSelecionada); },[paroquiaSelecionada]);
+  useEffect(()=>{
+    carregarBase();
+  },[]);
+
+  useEffect(()=>{
+    carregarMembros(paroquiaSelecionada);
+  },[paroquiaSelecionada]);
 
   async function criarParoquia(e:FormEvent) {
     e.preventDefault();
+
     setErro('');
     setMensagem('');
 
     try {
-      const nova=await api('/master/paroquias',{
-        method:'POST',
-        body:JSON.stringify({
-          nome:formParoquia.nome,
-          cidade:formParoquia.cidade,
-          endereco:formParoquia.endereco||null
-        })
+      const nova=await api(
+        '/master/paroquias',
+        {
+          method:'POST',
+          body:JSON.stringify({
+            nome:formParoquia.nome,
+            cidade:formParoquia.cidade,
+            endereco:
+              formParoquia.endereco||null
+          })
+        }
+      );
+
+      setFormParoquia({
+        nome:'',
+        cidade:'',
+        endereco:''
       });
 
-      setFormParoquia({ nome:'',cidade:'',endereco:'' });
-      setMensagem(`Paróquia "${nova.nome}" criada.`);
+      setMensagem(
+        `Paróquia "${nova.nome}" criada.`
+      );
+
       await carregarBase();
       setParoquiaSelecionada(nova.id);
     } catch (error) {
-      setErro(error instanceof Error?error.message:'Erro ao criar paróquia.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao criar paróquia.'
+      );
+    }
+  }
+
+  async function excluirParoquia(
+    paroquia:Paroquia
+  ) {
+    const digitado=window.prompt(
+      `ATENÇÃO: a exclusão é definitiva e apagará todos os grupos, músicas, momentos, missas, repertórios, escalas e convites desta paróquia.\n\nDigite exatamente "${paroquia.nome}" para confirmar:`
+    );
+
+    if (digitado!==paroquia.nome) {
+      if (digitado!==null) {
+        window.alert(
+          'O nome digitado não confere. Exclusão cancelada.'
+        );
+      }
+      return;
+    }
+
+    setErro('');
+    setMensagem('');
+
+    try {
+      await api(
+        `/master/paroquias/${paroquia.id}`,
+        { method:'DELETE' }
+      );
+
+      if (
+        localStorage.getItem(
+          'cantus_paroquia_ativa'
+        )
+      ) {
+        try {
+          const ativa=JSON.parse(
+            localStorage.getItem(
+              'cantus_paroquia_ativa'
+            ) || 'null'
+          );
+
+          if (ativa?.id===paroquia.id) {
+            localStorage.removeItem(
+              'cantus_paroquia_ativa'
+            );
+            localStorage.removeItem(
+              'cantus_grupo_ativo'
+            );
+          }
+        } catch {
+          localStorage.removeItem(
+            'cantus_paroquia_ativa'
+          );
+          localStorage.removeItem(
+            'cantus_grupo_ativo'
+          );
+        }
+      }
+
+      setParoquiaSelecionada('');
+      setMembros([]);
+      setMensagem(
+        `Paróquia "${paroquia.nome}" e todos os dados vinculados foram excluídos.`
+      );
+
+      await carregarBase();
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir paróquia.'
+      );
     }
   }
 
   async function vincularUsuario(e:FormEvent) {
     e.preventDefault();
-    if (!paroquiaSelecionada || !novoUsuarioId) return;
+
+    if (
+      !paroquiaSelecionada ||
+      !novoUsuarioId
+    ) {
+      return;
+    }
 
     setErro('');
     setMensagem('');
 
     try {
-      await api(`/master/paroquias/${paroquiaSelecionada}/membros`,{
-        method:'POST',
-        body:JSON.stringify({
-          userId:novoUsuarioId,
-          papel:novoPapel
-        })
-      });
+      await api(
+        `/master/paroquias/${paroquiaSelecionada}/membros`,
+        {
+          method:'POST',
+          body:JSON.stringify({
+            userId:novoUsuarioId,
+            papel:novoPapel
+          })
+        }
+      );
 
-      setMensagem('Usuário associado à paróquia.');
+      setMensagem(
+        'Usuário associado à paróquia.'
+      );
+
       setNovoUsuarioId('');
       setNovoPapel('MEMBRO');
-      await carregarMembros(paroquiaSelecionada);
+
+      await carregarMembros(
+        paroquiaSelecionada
+      );
     } catch (error) {
-      setErro(error instanceof Error?error.message:'Erro ao associar usuário.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao associar usuário.'
+      );
     }
   }
 
-  async function alterarPapel(m:MembroParoquia) {
-    const papel=m.papel==='ADMIN_PAROQUIA'?'MEMBRO':'ADMIN_PAROQUIA';
+  async function alterarPapel(
+    membro:MembroParoquia
+  ) {
+    const papel=
+      membro.papel==='ADMIN_PAROQUIA'
+        ? 'MEMBRO'
+        : 'ADMIN_PAROQUIA';
 
-    await api(`/master/paroquias/${paroquiaSelecionada}/membros`,{
-      method:'POST',
-      body:JSON.stringify({
-        userId:m.userId,
-        papel
-      })
-    });
+    await api(
+      `/master/paroquias/${paroquiaSelecionada}/membros`,
+      {
+        method:'POST',
+        body:JSON.stringify({
+          userId:membro.userId,
+          papel
+        })
+      }
+    );
 
-    await carregarMembros(paroquiaSelecionada);
+    await carregarMembros(
+      paroquiaSelecionada
+    );
   }
 
-  async function removerVinculo(m:MembroParoquia) {
-    if (!confirm(`Remover ${m.nome} desta paróquia?`)) return;
+  async function removerVinculo(
+    membro:MembroParoquia
+  ) {
+    if (
+      !window.confirm(
+        `Remover ${membro.nome} desta paróquia?`
+      )
+    ) {
+      return;
+    }
 
-    await api(`/master/paroquias/${paroquiaSelecionada}/membros/${m.userId}`,{
-      method:'DELETE'
-    });
+    await api(
+      `/master/paroquias/${paroquiaSelecionada}/membros/${membro.userId}`,
+      { method:'DELETE' }
+    );
 
-    await carregarMembros(paroquiaSelecionada);
+    await carregarMembros(
+      paroquiaSelecionada
+    );
   }
 
   async function alterarPerfilGlobal(
     usuario:Usuario,
     perfilGlobal:'USUARIO'|'MASTER'
   ) {
-    if (!confirm(`Alterar perfil global de ${usuario.nome} para ${perfilGlobal}?`)) return;
+    if (
+      !window.confirm(
+        `Alterar perfil global de ${usuario.nome} para ${perfilGlobal}?`
+      )
+    ) {
+      return;
+    }
 
-    await api(`/master/usuarios/${usuario.id}/perfil`,{
-      method:'PUT',
-      body:JSON.stringify({ perfilGlobal })
-    });
+    await api(
+      `/master/usuarios/${usuario.id}/perfil`,
+      {
+        method:'PUT',
+        body:JSON.stringify({
+          perfilGlobal
+        })
+      }
+    );
 
     await carregarBase();
   }
 
-
-  async function excluirGrupo(grupo:GrupoAdmin) {
+  async function excluirUsuario(
+    usuario:Usuario
+  ) {
     const digitado=window.prompt(
-      `A exclusão é definitiva.\n\nDigite exatamente "${grupo.nome}" para excluir o grupo:`
+      `A conta será excluída. Paróquias, grupos e missas NÃO serão apagados.\n\nDigite exatamente o e-mail "${usuario.email}" para confirmar:`
     );
 
-    if (digitado!==grupo.nome) return;
+    if (digitado!==usuario.email) {
+      if (digitado!==null) {
+        window.alert(
+          'O e-mail digitado não confere. Exclusão cancelada.'
+        );
+      }
+      return;
+    }
+
+    setErro('');
+    setMensagem('');
 
     try {
-      await api(`/grupos/${grupo.id}`,{ method:'DELETE' });
-      setMensagem(`Grupo "${grupo.nome}" excluído.`);
+      await api(
+        `/master/usuarios/${usuario.id}`,
+        { method:'DELETE' }
+      );
+
+      setMensagem(
+        `Usuário "${usuario.nome}" excluído.`
+      );
+
       await carregarBase();
+
+      if (paroquiaSelecionada) {
+        await carregarMembros(
+          paroquiaSelecionada
+        );
+      }
     } catch (error) {
-      setErro(error instanceof Error?error.message:'Erro ao excluir grupo.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir usuário.'
+      );
     }
   }
 
-  const pAtual=paroquias.find(p=>p.id===paroquiaSelecionada);
+  async function excluirGrupo(
+    grupo:GrupoAdmin
+  ) {
+    const digitado=window.prompt(
+      `A exclusão é definitiva e apagará somente este grupo e todos os dados abaixo dele.\n\nDigite exatamente "${grupo.nome}" para confirmar:`
+    );
+
+    if (digitado!==grupo.nome) {
+      if (digitado!==null) {
+        window.alert(
+          'O nome digitado não confere. Exclusão cancelada.'
+        );
+      }
+      return;
+    }
+
+    setErro('');
+    setMensagem('');
+
+    try {
+      await api(
+        `/grupos/${grupo.id}`,
+        { method:'DELETE' }
+      );
+
+      const ativo=
+        localStorage.getItem(
+          'cantus_grupo_ativo'
+        );
+
+      if (ativo) {
+        try {
+          const grupoAtivo=
+            JSON.parse(ativo);
+
+          if (
+            grupoAtivo?.id===grupo.id
+          ) {
+            localStorage.removeItem(
+              'cantus_grupo_ativo'
+            );
+          }
+        } catch {
+          localStorage.removeItem(
+            'cantus_grupo_ativo'
+          );
+        }
+      }
+
+      setMensagem(
+        `Grupo "${grupo.nome}" e seus dados vinculados foram excluídos.`
+      );
+
+      await carregarBase();
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir grupo.'
+      );
+    }
+  }
+
+  const pAtual=paroquias.find(
+    p=>p.id===paroquiaSelecionada
+  );
 
   return (
     <main className="cantus-page">
       <header className="border-b border-white/10 bg-[#0b0c0e]/90">
         <div className="cantus-shell h-20 flex items-center justify-between">
           <div>
-            <div className="cantus-eyebrow">Cantus Dei</div>
+            <div className="cantus-eyebrow">
+              Cantus Dei
+            </div>
+
             <div className="cantus-display mt-1 text-lg">
               Administração global
             </div>
           </div>
 
-          <Link to="/dashboard" className="cantus-secondary px-4 py-2 text-sm">
+          <Link
+            to="/paroquias"
+            className="cantus-secondary px-4 py-2 text-sm"
+          >
             Voltar
           </Link>
         </div>
       </header>
 
       <section className="cantus-shell py-10">
-        <div className="cantus-eyebrow">Estrutura multi-paróquia</div>
+        <div className="cantus-eyebrow">
+          Estrutura multi-paróquia
+        </div>
+
         <h1 className="cantus-section-title mt-3">
-          Paróquias e
-          <span className="cantus-gold"> acessos.</span>
+          Administração
+          <span className="cantus-gold">
+            {' '}global.
+          </span>
         </h1>
+
         <p className="mt-3 cantus-muted max-w-3xl">
-          O MASTER cria as paróquias e associa usuários. Cada paróquia
-          mantém seus próprios grupos, missas, repertórios e escalas.
+          Gerencie paróquias, usuários e grupos do Cantus Dei.
         </p>
 
         {erro && (
@@ -243,37 +525,67 @@ export default function MasterAdmin() {
         )}
 
         <div className="grid lg:grid-cols-[.8fr_1.2fr] gap-5 mt-8">
-          <form onSubmit={criarParoquia} className="cantus-card p-6">
-            <div className="cantus-eyebrow">Nova paróquia</div>
+          <form
+            onSubmit={criarParoquia}
+            className="cantus-card p-6"
+          >
+            <div className="cantus-eyebrow">
+              Nova paróquia
+            </div>
+
             <h2 className="cantus-display mt-3 text-3xl">
               Cadastrar paróquia
             </h2>
 
             <label className="block mt-5">
-              <span className="text-sm font-semibold">Nome</span>
+              <span className="text-sm font-semibold">
+                Nome
+              </span>
+
               <input
                 required
                 value={formParoquia.nome}
-                onChange={e=>setFormParoquia({ ...formParoquia,nome:e.target.value })}
+                onChange={e=>
+                  setFormParoquia({
+                    ...formParoquia,
+                    nome:e.target.value
+                  })
+                }
                 className="cantus-input mt-2"
               />
             </label>
 
             <label className="block mt-4">
-              <span className="text-sm font-semibold">Cidade</span>
+              <span className="text-sm font-semibold">
+                Cidade
+              </span>
+
               <input
                 required
                 value={formParoquia.cidade}
-                onChange={e=>setFormParoquia({ ...formParoquia,cidade:e.target.value })}
+                onChange={e=>
+                  setFormParoquia({
+                    ...formParoquia,
+                    cidade:e.target.value
+                  })
+                }
                 className="cantus-input mt-2"
               />
             </label>
 
             <label className="block mt-4">
-              <span className="text-sm font-semibold">Endereço</span>
+              <span className="text-sm font-semibold">
+                Endereço
+              </span>
+
               <input
                 value={formParoquia.endereco}
-                onChange={e=>setFormParoquia({ ...formParoquia,endereco:e.target.value })}
+                onChange={e=>
+                  setFormParoquia({
+                    ...formParoquia,
+                    endereco:e.target.value
+                  })
+                }
                 className="cantus-input mt-2"
               />
             </label>
@@ -284,16 +596,28 @@ export default function MasterAdmin() {
           </form>
 
           <section className="cantus-card p-6">
-            <div className="cantus-eyebrow">Paróquia selecionada</div>
+            <div className="cantus-eyebrow">
+              Paróquia selecionada
+            </div>
 
             <select
               value={paroquiaSelecionada}
-              onChange={e=>setParoquiaSelecionada(e.target.value)}
+              onChange={e=>
+                setParoquiaSelecionada(
+                  e.target.value
+                )
+              }
               className="cantus-input mt-4"
             >
-              <option value="">Selecione uma paróquia</option>
+              <option value="">
+                Selecione uma paróquia
+              </option>
+
               {paroquias.map(p=>(
-                <option key={p.id} value={p.id}>
+                <option
+                  key={p.id}
+                  value={p.id}
+                >
                   {p.nome} · {p.cidade}
                 </option>
               ))}
@@ -304,20 +628,58 @@ export default function MasterAdmin() {
                 <h2 className="cantus-display mt-6 text-3xl">
                   {pAtual.nome}
                 </h2>
+
                 <p className="mt-2 cantus-muted">
                   {pAtual.cidade}
-                  {pAtual.endereco?` · ${pAtual.endereco}`:''}
+                  {pAtual.endereco
+                    ? ` · ${pAtual.endereco}`
+                    : ''}
                 </p>
 
-                <form onSubmit={vincularUsuario} className="mt-6 grid md:grid-cols-[1fr_.65fr_auto] gap-3">
+                <div className="mt-5 rounded-xl border border-red-500/20 bg-red-950/15 p-4">
+                  <div className="text-xs font-extrabold uppercase tracking-[.15em] text-red-300">
+                    Zona de atenção
+                  </div>
+
+                  <p className="mt-2 text-sm cantus-muted">
+                    Excluir a paróquia também excluirá todos os grupos e dados vinculados a ela.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={()=>
+                      excluirParoquia(
+                        pAtual
+                      )
+                    }
+                    className="cantus-danger mt-4 px-4 py-2 text-sm"
+                  >
+                    Excluir paróquia
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={vincularUsuario}
+                  className="mt-6 grid md:grid-cols-[1fr_.65fr_auto] gap-3"
+                >
                   <select
                     value={novoUsuarioId}
-                    onChange={e=>setNovoUsuarioId(e.target.value)}
+                    onChange={e=>
+                      setNovoUsuarioId(
+                        e.target.value
+                      )
+                    }
                     className="cantus-input"
                   >
-                    <option value="">Associar usuário...</option>
+                    <option value="">
+                      Associar usuário...
+                    </option>
+
                     {usuariosDisponiveis.map(u=>(
-                      <option key={u.id} value={u.id}>
+                      <option
+                        key={u.id}
+                        value={u.id}
+                      >
                         {u.nome} · {u.email}
                       </option>
                     ))}
@@ -325,11 +687,22 @@ export default function MasterAdmin() {
 
                   <select
                     value={novoPapel}
-                    onChange={e=>setNovoPapel(e.target.value as 'ADMIN_PAROQUIA'|'MEMBRO')}
+                    onChange={e=>
+                      setNovoPapel(
+                        e.target.value as
+                        'ADMIN_PAROQUIA'|
+                        'MEMBRO'
+                      )
+                    }
                     className="cantus-input"
                   >
-                    <option value="MEMBRO">Membro</option>
-                    <option value="ADMIN_PAROQUIA">Admin. Paróquia</option>
+                    <option value="MEMBRO">
+                      Membro
+                    </option>
+
+                    <option value="ADMIN_PAROQUIA">
+                      Admin. Paróquia
+                    </option>
                   </select>
 
                   <button className="cantus-secondary px-5">
@@ -339,27 +712,45 @@ export default function MasterAdmin() {
 
                 <div className="mt-6 space-y-2">
                   {membros.map(m=>(
-                    <div key={m.userId} className="rounded-xl border border-white/10 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div
+                      key={m.userId}
+                      className="rounded-xl border border-white/10 p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+                    >
                       <div className="flex-1">
-                        <div className="font-semibold">{m.nome}</div>
-                        <div className="text-sm cantus-muted">{m.email}</div>
+                        <div className="font-semibold">
+                          {m.nome}
+                        </div>
+
+                        <div className="text-sm cantus-muted">
+                          {m.email}
+                        </div>
                       </div>
 
-                      <span className="cantus-badge">{m.papel}</span>
+                      <span className="cantus-badge">
+                        {m.papel}
+                      </span>
 
                       <div className="flex gap-2">
                         <button
-                          onClick={()=>alterarPapel(m)}
+                          type="button"
+                          onClick={()=>
+                            alterarPapel(m)
+                          }
                           className="cantus-secondary px-3 py-2 text-xs"
                         >
-                          {m.papel==='ADMIN_PAROQUIA'?'Tornar membro':'Tornar admin'}
+                          {m.papel==='ADMIN_PAROQUIA'
+                            ? 'Tornar membro'
+                            : 'Tornar admin'}
                         </button>
 
                         <button
-                          onClick={()=>removerVinculo(m)}
+                          type="button"
+                          onClick={()=>
+                            removerVinculo(m)
+                          }
                           className="cantus-danger px-3 py-2 text-xs"
                         >
-                          Remover
+                          Remover vínculo
                         </button>
                       </div>
                     </div>
@@ -370,9 +761,11 @@ export default function MasterAdmin() {
           </section>
         </div>
 
-
         <section className="cantus-card mt-5 p-6">
-          <div className="cantus-eyebrow">Grupos por paróquia</div>
+          <div className="cantus-eyebrow">
+            Grupos
+          </div>
+
           <h2 className="cantus-display mt-3 text-3xl">
             Grupos cadastrados
           </h2>
@@ -381,24 +774,42 @@ export default function MasterAdmin() {
             <table className="cantus-table w-full text-left">
               <thead>
                 <tr>
-                  <th className="px-4 py-3">Grupo</th>
-                  <th className="px-4 py-3">Paróquia</th>
-                  <th className="px-4 py-3 text-right">Ação</th>
+                  <th className="px-4 py-3">
+                    Grupo
+                  </th>
+                  <th className="px-4 py-3">
+                    Paróquia
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    Ação
+                  </th>
                 </tr>
               </thead>
+
               <tbody>
                 {grupos.map(g=>(
                   <tr key={g.id}>
                     <td className="px-4 py-4">
-                      <div className="font-semibold">{g.nome}</div>
+                      <div className="font-semibold">
+                        {g.nome}
+                      </div>
                     </td>
+
                     <td className="px-4 py-4">
-                      <div>{g.paroquia}</div>
-                      <div className="text-sm cantus-muted">{g.cidade}</div>
+                      <div>
+                        {g.paroquia}
+                      </div>
+
+                      <div className="text-sm cantus-muted">
+                        {g.cidade}
+                      </div>
                     </td>
+
                     <td className="px-4 py-4 text-right">
                       <button
-                        onClick={()=>excluirGrupo(g)}
+                        onClick={()=>
+                          excluirGrupo(g)
+                        }
                         className="cantus-danger px-3 py-2 text-xs"
                       >
                         Excluir grupo
@@ -412,45 +823,96 @@ export default function MasterAdmin() {
         </section>
 
         <section className="cantus-card mt-5 p-6">
-          <div className="cantus-eyebrow">Perfis globais</div>
+          <div className="cantus-eyebrow">
+            Usuários
+          </div>
+
           <h2 className="cantus-display mt-3 text-3xl">
             Usuários do Cantus Dei
           </h2>
+
+          <p className="mt-2 text-sm cantus-muted">
+            Excluir uma conta não exclui paróquias, grupos nem missas.
+          </p>
 
           <div className="mt-5 overflow-x-auto">
             <table className="cantus-table w-full text-left">
               <thead>
                 <tr>
-                  <th className="px-4 py-3">Usuário</th>
-                  <th className="px-4 py-3">Global</th>
-                  <th className="px-4 py-3 text-right">Ação</th>
+                  <th className="px-4 py-3">
+                    Usuário
+                  </th>
+                  <th className="px-4 py-3">
+                    Global
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    Ações
+                  </th>
                 </tr>
               </thead>
+
               <tbody>
                 {usuarios.map(u=>(
                   <tr key={u.id}>
                     <td className="px-4 py-4">
                       <div className="font-semibold">
                         {u.nome}
-                        {u.id===user?.id && <span className="ml-2 cantus-gold text-xs">VOCÊ</span>}
+
+                        {u.id===user?.id && (
+                          <span className="ml-2 cantus-gold text-xs">
+                            VOCÊ
+                          </span>
+                        )}
                       </div>
-                      <div className="text-sm cantus-muted">{u.email}</div>
+
+                      <div className="text-sm cantus-muted">
+                        {u.email}
+                      </div>
                     </td>
+
                     <td className="px-4 py-4">
-                      <span className="cantus-badge">{u.perfilGlobal}</span>
+                      <span className="cantus-badge">
+                        {u.perfilGlobal}
+                      </span>
                     </td>
-                    <td className="px-4 py-4 text-right">
-                      {u.id!==user?.id && (
-                        <button
-                          onClick={()=>alterarPerfilGlobal(
-                            u,
-                            u.perfilGlobal==='MASTER'?'USUARIO':'MASTER'
-                          )}
-                          className="cantus-secondary px-3 py-2 text-xs"
-                        >
-                          {u.perfilGlobal==='MASTER'?'Remover MASTER':'Tornar MASTER'}
-                        </button>
-                      )}
+
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2 flex-wrap">
+                        {u.id!==user?.id && (
+                          <>
+                            <button
+                              onClick={()=>
+                                alterarPerfilGlobal(
+                                  u,
+                                  u.perfilGlobal==='MASTER'
+                                    ? 'USUARIO'
+                                    : 'MASTER'
+                                )
+                              }
+                              className="cantus-secondary px-3 py-2 text-xs"
+                            >
+                              {u.perfilGlobal==='MASTER'
+                                ? 'Remover MASTER'
+                                : 'Tornar MASTER'}
+                            </button>
+
+                            <button
+                              onClick={()=>
+                                excluirUsuario(u)
+                              }
+                              className="cantus-danger px-3 py-2 text-xs"
+                            >
+                              Excluir usuário
+                            </button>
+                          </>
+                        )}
+
+                        {u.id===user?.id && (
+                          <span className="text-xs cantus-muted">
+                            Conta MASTER em uso
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

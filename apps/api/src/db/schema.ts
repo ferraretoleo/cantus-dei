@@ -73,7 +73,7 @@ export const convites = pgTable('convites', {
   token: varchar('token', { length: 100 }).notNull().unique(),
   expiraEm: timestamp('expira_em', { withTimezone: true }).notNull(),
   status: conviteStatusEnum('status').default('PENDENTE').notNull(),
-  convidadoPor: uuid('convidado_por').notNull().references(() => users.id),
+  convidadoPor: uuid('convidado_por').references(() => users.id, { onDelete: 'set null' }),
   ...timestamps
 });
 
@@ -121,7 +121,7 @@ export const missas = pgTable('missas', {
   status: missaStatusEnum('status').default('RASCUNHO').notNull(),
   tokenPublico: varchar('token_publico', { length: 64 }).unique(),
   publicadoEm: timestamp('publicado_em', { withTimezone: true }),
-  criadoPor: uuid('criado_por').notNull().references(() => users.id),
+  criadoPor: uuid('criado_por').references(() => users.id, { onDelete: 'set null' }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   ...timestamps
 }, t => [index('missas_grupo_data_idx').on(t.grupoId,t.dataHora)]);
@@ -129,8 +129,8 @@ export const missas = pgTable('missas', {
 export const missaMusicas = pgTable('missa_musicas', {
   id: uuid('id').defaultRandom().primaryKey(),
   missaId: uuid('missa_id').notNull().references(() => missas.id, { onDelete: 'cascade' }),
-  musicaId: uuid('musica_id').notNull().references(() => musicas.id),
-  momentoId: uuid('momento_id').notNull().references(() => momentos.id),
+  musicaId: uuid('musica_id').notNull().references(() => musicas.id, { onDelete: 'cascade' }),
+  momentoId: uuid('momento_id').notNull().references(() => momentos.id, { onDelete: 'cascade' }),
   ordem: integer('ordem').notNull(),
   tomDaExecucao: varchar('tom_da_execucao', { length: 20 }),
   observacao: text('observacao'),
