@@ -144,9 +144,7 @@ export default function MissaEditor() {
                 userId:
                   e.userId,
                 instrumentoVoz:
-                  e.instrumentoVoz || '',
-                confirmacao:
-                  e.confirmacao
+                  e.instrumentoVoz || ''
               })
             )
           );
@@ -343,6 +341,17 @@ export default function MissaEditor() {
             method:'POST'
           }
         );
+
+      localStorage.setItem(
+        'cantus_ultima_publicacao',
+        JSON.stringify({
+          missaId:id,
+          publicUrl:data.publicUrl,
+          token:data.token,
+          grupoId,
+          criadoEm:Date.now()
+        })
+      );
 
       navigate(
         `/g/${slug}/calendario?publicada=${id}`,
@@ -579,9 +588,7 @@ export default function MissaEditor() {
           instrumentoVoz:
             membro.instrumento ||
             membro.voz ||
-            '',
-          confirmacao:
-            'PENDENTE'
+            ''
         }
       ]);
     }
@@ -629,48 +636,7 @@ export default function MissaEditor() {
     }
   }
 
-  async function confirmar(
-    status:
-      'CONFIRMADO'|
-      'AUSENTE'
-  ) {
-    if (
-      nova ||
-      !missaId
-    ) {
-      return;
-    }
 
-    await api(
-      `/grupos/${grupoId}/missas/${missaId}/confirmar`,
-      {
-        method:'POST',
-        body:
-          JSON.stringify({
-            confirmacao:
-              status
-          })
-      }
-    );
-
-    alert(
-      'Resposta registrada.'
-    );
-  }
-
-  const meuUser=
-    JSON.parse(
-      localStorage.getItem(
-        'cantus_user'
-      ) || 'null'
-    );
-
-  const estouEscalado=
-    escala.some(
-      x=>
-        x.userId===
-        meuUser?.id
-    );
 
   return (
     <main className="cantus-page">
@@ -1271,40 +1237,6 @@ export default function MissaEditor() {
                 )}
               </div>
 
-              {estouEscalado &&
-                !nova && (
-                <div className="mt-7 border-t border-white/10 pt-6">
-                  <div className="cantus-eyebrow">
-                    Sua participação
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    <button
-                      type="button"
-                      onClick={()=>
-                        confirmar(
-                          'CONFIRMADO'
-                        )
-                      }
-                      className="rounded-full border border-emerald-500/30 bg-emerald-900/20 px-5 py-2.5 text-sm font-bold text-emerald-200"
-                    >
-                      Confirmar presença
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={()=>
-                        confirmar(
-                          'AUSENTE'
-                        )
-                      }
-                      className="cantus-danger px-5 py-2.5 text-sm"
-                    >
-                      Não poderei participar
-                    </button>
-                  </div>
-                </div>
-              )}
             </section>
 
             {podeEditar && (

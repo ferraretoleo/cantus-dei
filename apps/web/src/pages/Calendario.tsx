@@ -210,6 +210,24 @@ export default function Calendario() {
       [missas,publicadaId]
     );
 
+  const ultimaPublicacao=useMemo(()=>{
+    try {
+      return JSON.parse(
+        localStorage.getItem(
+          'cantus_ultima_publicacao'
+        ) || 'null'
+      ) as {
+        missaId?:string;
+        publicUrl?:string;
+        token?:string;
+        grupoId?:string;
+        criadoEm?:number;
+      } | null;
+    } catch {
+      return null;
+    }
+  },[publicadaId]);
+
   const publicUrl=
     (
       location.state as
@@ -217,6 +235,12 @@ export default function Calendario() {
         publicUrl?:string
       } | null
     )?.publicUrl ||
+    (
+      ultimaPublicacao?.missaId===publicadaId &&
+      ultimaPublicacao?.publicUrl
+        ? ultimaPublicacao.publicUrl
+        : ''
+    ) ||
     (
       publicada?.tokenPublico
         ? `${window.location.origin}/celebracao/${publicada.tokenPublico}`
@@ -236,6 +260,18 @@ export default function Calendario() {
       .then(setQr)
       .catch(()=>setQr(''));
   },[publicUrl]);
+
+  useEffect(()=>{
+    if (
+      publicadaId &&
+      publicUrl
+    ) {
+      window.scrollTo({
+        top:0,
+        behavior:'smooth'
+      });
+    }
+  },[publicadaId,publicUrl]);
 
   useEffect(()=>{
     if (
@@ -330,35 +366,41 @@ export default function Calendario() {
           </div>
         )}
 
-        {publicada &&
+        {publicadaId &&
           publicUrl && (
-          <section className="cantus-card mt-7 p-6 sm:p-8">
+          <section className="cantus-card mt-7 p-6 sm:p-8 ring-1 ring-[#d5ae62]/45">
             <div className="cantus-eyebrow">
-              Celebração publicada
+              Celebração publicada com sucesso
+            </div>
+
+            <div className="mt-2 text-sm cantus-muted">
+              Use os atalhos abaixo para compartilhar a celebração.
             </div>
 
             <div className="grid lg:grid-cols-[1fr_auto] gap-6 items-start mt-4">
               <div>
                 <h2 className="cantus-display text-3xl">
-                  {publicada.tipoCelebracao}
+                  {publicada?.tipoCelebracao || 'Celebração publicada'}
                 </h2>
 
                 <p className="mt-2 cantus-muted">
-                  {new Intl.DateTimeFormat(
-                    'pt-BR',
-                    {
-                      dateStyle:'full',
-                      timeStyle:'short'
-                    }
-                  ).format(
-                    new Date(
-                      publicada.dataHora
-                    )
-                  )}
+                  {publicada?.dataHora
+                    ? new Intl.DateTimeFormat(
+                        'pt-BR',
+                        {
+                          dateStyle:'full',
+                          timeStyle:'short'
+                        }
+                      ).format(
+                        new Date(
+                          publicada.dataHora
+                        )
+                      )
+                    : 'Publicação concluída com sucesso'}
                 </p>
 
                 <p className="mt-1 cantus-muted">
-                  {publicada.local}
+                  {publicada?.local || grupoAtual.nome}
                 </p>
 
                 <div className="mt-5 rounded-xl border border-white/10 bg-white/[.025] p-4">
