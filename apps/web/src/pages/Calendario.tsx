@@ -552,6 +552,10 @@ export default function Calendario() {
                               <div className="mt-0.5 truncate">
                                 {evento.tipoCelebracao}
                               </div>
+
+                              <div className="mt-0.5 truncate text-[10px] opacity-75">
+                                {grupoAtual.nome}
+                              </div>
                             </Link>
                           )
                         )}
@@ -618,6 +622,10 @@ export default function Calendario() {
                     <div className="flex-1 min-w-0">
                       <div className="cantus-display text-2xl">
                         {missa.tipoCelebracao}
+                      </div>
+
+                      <div className="mt-1 text-sm font-semibold cantus-gold">
+                        {grupoAtual.nome}
                       </div>
 
                       <div className="mt-1 text-sm cantus-muted">

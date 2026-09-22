@@ -1,37 +1,34 @@
-CORREÇÃO TS18047 - GROUPHEADER
+CANTUS DEI - CALENDÁRIO COM NOME DO MINISTÉRIO
 
-Erro corrigido:
-src/components/GroupHeader.tsx
-'grupo' is possibly 'null'
+ALTERAÇÃO
 
-Causa:
-O TypeScript não preservava a garantia de que grupo não era null
-dentro da função rotuloPapel().
+No calendário mensal, cada celebração passa a mostrar:
 
-Correção:
-Após a validação:
+19:00
+Santa Missa
+Ministério São José
 
-if (!grupo || grupo.slug !== slug) {
-  return null;
-}
+Na agenda detalhada abaixo do calendário também passa a aparecer:
 
-foi criada a referência:
-
-const grupoAtual = grupo;
-
-O componente passa a utilizar grupoAtual.
+Santa Missa
+Ministério São José
+19:00 · Igreja Matriz
 
 COMO APLICAR
 
-Extraia por cima de:
+1. Extraia este ZIP na raiz:
 D:\GitHub\cantus-dei
 
-Depois execute:
+2. Execute:
+python APLICAR-CALENDARIO-MINISTERIO.py
+
+3. Depois:
 npm run build
 
-Se passar:
+4. Se passar:
 git add .
-git commit -m "Corrige tipagem do GroupHeader"
+git commit -m "Mostra ministerio no calendario de celebracoes"
 git push origin main
 
 Não precisa executar SQL.
+Não altera API nem banco.
