@@ -10,7 +10,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MasterRoute from './components/MasterRoute';
 
 import Login from './pages/Login';
-import Registrar from './pages/Registrar';
 import SelecionarParoquia from './pages/SelecionarParoquia';
 import Dashboard from './pages/Dashboard';
 import ParoquiaAdmin from './pages/ParoquiaAdmin';
@@ -38,7 +37,10 @@ export default function App() {
           />
 
           <Route path="/login" element={<Login />} />
-          <Route path="/registrar" element={<Registrar />} />
+          <Route
+            path="/registrar"
+            element={<Navigate to="/login" replace />}
+          />
 
           <Route
             path="/convites/:token"

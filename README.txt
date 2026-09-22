@@ -1,39 +1,51 @@
-CANTUS DEI - CONTATOS DOS INTEGRANTES V7.2
+CANTUS DEI - REMOÇÃO DO AUTO CADASTRO PÚBLICO V7.3
 
-ALTERAÇÃO
+ALTERAÇÕES
 
-Na tela Integrantes, cada card passa a mostrar claramente:
+1. LOGIN
+Foi removido:
 
-- Nome
-- Papel no ministério
-- E-mail
-- Telefone
-- Instrumento
-- Voz
+Ainda não participa? Criar conta
 
-O e-mail fica clicável usando mailto:
-O telefone fica clicável usando tel:
+2. ROTA /registrar
+Mesmo que alguém tente acessar diretamente:
 
-Caso o telefone não esteja cadastrado, aparece:
-"Telefone não informado"
+https://app.cantus-dei.workers.dev/registrar
 
-A API já retornava telefone e e-mail, portanto:
-- não precisa alterar backend
-- não precisa executar SQL
-- não precisa alterar Neon
+o sistema redireciona para:
 
-APLICAÇÃO
+/login
+
+3. FLUXO DE ACESSO MANTIDO
+
+MASTER GLOBAL
+- cria/libera os administradores de paróquia
+
+ADMIN_PAROQUIA / RESPONSÁVEL DO MINISTÉRIO
+- usam o fluxo de convite para novos músicos
+
+MÚSICO CONVIDADO
+- acessa o link do convite
+- cria a senha
+- fica associado à paróquia e ao ministério
+
+Ou seja, foi removido apenas o cadastro espontâneo/público.
+
+COMO APLICAR
 
 1. Extraia este ZIP na raiz:
 D:\GitHub\cantus-dei
 
 2. Execute:
-python APLICAR-INTEGRANTES-CONTATO-V7-2.py
+python APLICAR-REMOVE-AUTO-CADASTRO-V7-3.py
 
 3. Depois:
 npm run build
 
 4. Se passar:
 git add .
-git commit -m "Mostra contatos dos integrantes"
+git commit -m "Remove auto cadastro publico"
 git push origin main
+
+Não precisa executar SQL.
+Não altera API nem Neon.

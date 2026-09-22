@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -118,12 +118,6 @@ export default function Login() {
             {carregando ? 'Entrando...' : 'Entrar'}
           </button>
 
-          <p className="mt-6 text-center text-sm cantus-muted">
-            Ainda não participa?{' '}
-            <Link className="font-bold cantus-gold" to="/registrar">
-              Criar conta
-            </Link>
-          </p>
         </form>
       </section>
     </main>
