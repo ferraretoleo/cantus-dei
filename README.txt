@@ -1,36 +1,58 @@
-CORREÇÃO TS18047 - PAROQUIA ATIVA
+CANTUS DEI - DASHBOARD APÓS CRIAR GRUPO + NAVEGAÇÃO
 
-Arquivos corrigidos:
-- apps/web/src/pages/Dashboard.tsx
-- apps/web/src/pages/NovoGrupo.tsx
-- apps/web/src/pages/ParoquiaAdmin.tsx
+ALTERAÇÕES
 
-Causa:
-O TypeScript não preservava a garantia de que paroquiaAtiva não era null
-dentro das funções assíncronas.
+1. NOVO GRUPO
+Depois de criar um grupo:
+- não entra automaticamente no grupo
+- retorna para /dashboard
+- o Dashboard recarrega a lista e mostra o novo grupo
 
-Correção:
-Após:
-if (!paroquiaAtiva) {
-  return <Navigate to="/paroquias" replace />;
-}
+2. DENTRO DO GRUPO
+Todos os usuários possuem link "Dashboard".
 
-foi criada uma referência estável:
-const paroquiaAtual = paroquiaAtiva;
+O botão aparece:
+- na barra principal
+- na navegação mobile
 
-Todas as funções passam a usar paroquiaAtual.
+3. PERMISSÕES ADMINISTRATIVAS
+
+MASTER e ADMIN_PAROQUIA veem:
+- Dashboard
+- Início
+- Calendário
+- Músicas
+- Momentos
+- Integrantes
+- Convites
+- Admin. Paróquia
+
+Usuário comum vê:
+- Dashboard
+- Início
+- Calendário
+- Músicas
+- Momentos
+
+4. IDENTIFICAÇÃO
+No cabeçalho:
+- MASTER aparece como MASTER
+- administrador da paróquia aparece como ADMIN PARÓQUIA
+- demais usuários mostram o papel no grupo
 
 APLICAÇÃO
 
-1. Extraia por cima de:
+Extraia por cima de:
 D:\GitHub\cantus-dei
 
-2. Execute:
+Depois:
 npm run build
 
-3. Se passar:
+Se passar:
 git add .
-git commit -m "Corrige tipagem da paroquia ativa"
+git commit -m "Ajusta retorno ao dashboard e permissoes no grupo"
 git push origin main
 
 Não precisa executar SQL.
+Não altera banco.
+Não altera API.

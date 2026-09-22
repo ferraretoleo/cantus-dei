@@ -1,4 +1,9 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  Link,
+  useNavigate,
+  useParams
+} from 'react-router-dom';
+
 import { useAuth } from '../contexts/AuthContext';
 
 export type GrupoAtivo = {
@@ -12,7 +17,9 @@ export type GrupoAtivo = {
 };
 
 export function getGrupoAtivo(): GrupoAtivo | null {
-  const raw = localStorage.getItem('cantus_grupo_ativo');
+  const raw =
+    localStorage.getItem('cantus_grupo_ativo');
+
   if (!raw) return null;
 
   try {
@@ -25,10 +32,22 @@ export function getGrupoAtivo(): GrupoAtivo | null {
 export default function GroupHeader() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+
+  const {
+    user,
+    paroquiaAtiva,
+    logout
+  } = useAuth();
+
   const grupo = getGrupoAtivo();
 
-  if (!grupo || grupo.slug !== slug) return null;
+  if (!grupo || grupo.slug !== slug) {
+    return null;
+  }
+
+  const podeAdministrarParoquia =
+    user?.perfilGlobal === 'MASTER' ||
+    paroquiaAtiva?.papel === 'ADMIN_PAROQUIA';
 
   function sair() {
     logout();
@@ -40,7 +59,10 @@ export default function GroupHeader() {
       <div className="cantus-shell">
         <div className="h-20 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <Link to="/dashboard" className="cantus-eyebrow">
+            <Link
+              to="/dashboard"
+              className="cantus-eyebrow"
+            >
               Cantus Dei
             </Link>
 
@@ -50,12 +72,65 @@ export default function GroupHeader() {
           </div>
 
           <nav className="hidden xl:flex items-center gap-1">
-            <Link className="cantus-nav-link" to={`/g/${slug}`}>Início</Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/calendario`}>Calendário</Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/musicas`}>Músicas</Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/momentos`}>Momentos</Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/integrantes`}>Integrantes</Link>
-            <Link className="cantus-nav-link" to={`/g/${slug}/convites`}>Convites</Link>
+            <Link
+              className="cantus-nav-link"
+              to="/dashboard"
+            >
+              Dashboard
+            </Link>
+
+            <Link
+              className="cantus-nav-link"
+              to={`/g/${slug}`}
+            >
+              Início
+            </Link>
+
+            <Link
+              className="cantus-nav-link"
+              to={`/g/${slug}/calendario`}
+            >
+              Calendário
+            </Link>
+
+            <Link
+              className="cantus-nav-link"
+              to={`/g/${slug}/musicas`}
+            >
+              Músicas
+            </Link>
+
+            <Link
+              className="cantus-nav-link"
+              to={`/g/${slug}/momentos`}
+            >
+              Momentos
+            </Link>
+
+            {podeAdministrarParoquia && (
+              <>
+                <Link
+                  className="cantus-nav-link"
+                  to={`/g/${slug}/integrantes`}
+                >
+                  Integrantes
+                </Link>
+
+                <Link
+                  className="cantus-nav-link"
+                  to={`/g/${slug}/convites`}
+                >
+                  Convites
+                </Link>
+
+                <Link
+                  className="cantus-nav-link"
+                  to="/paroquia/admin"
+                >
+                  Admin. Paróquia
+                </Link>
+              </>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">
@@ -63,24 +138,92 @@ export default function GroupHeader() {
               <div className="text-sm font-semibold text-[#e6dfd4]">
                 {user?.nome}
               </div>
+
               <div className="mt-1 text-[10px] font-extrabold tracking-[.12em] uppercase cantus-gold">
-                {grupo.papel}
+                {user?.perfilGlobal === 'MASTER'
+                  ? 'MASTER'
+                  : podeAdministrarParoquia
+                    ? 'ADMIN PARÓQUIA'
+                    : grupo.papel}
               </div>
             </div>
 
-            <button onClick={sair} className="cantus-secondary px-4 py-2 text-sm">
+            <Link
+              to="/dashboard"
+              className="cantus-secondary px-4 py-2 text-sm"
+            >
+              Dashboard
+            </Link>
+
+            <button
+              onClick={sair}
+              className="cantus-secondary px-4 py-2 text-sm"
+            >
               Sair
             </button>
           </div>
         </div>
 
         <nav className="xl:hidden flex gap-1 overflow-x-auto pb-3">
-          <Link className="cantus-nav-link" to={`/g/${slug}`}>Início</Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/calendario`}>Calendário</Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/musicas`}>Músicas</Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/momentos`}>Momentos</Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/integrantes`}>Integrantes</Link>
-          <Link className="cantus-nav-link" to={`/g/${slug}/convites`}>Convites</Link>
+          <Link
+            className="cantus-nav-link"
+            to="/dashboard"
+          >
+            Dashboard
+          </Link>
+
+          <Link
+            className="cantus-nav-link"
+            to={`/g/${slug}`}
+          >
+            Início
+          </Link>
+
+          <Link
+            className="cantus-nav-link"
+            to={`/g/${slug}/calendario`}
+          >
+            Calendário
+          </Link>
+
+          <Link
+            className="cantus-nav-link"
+            to={`/g/${slug}/musicas`}
+          >
+            Músicas
+          </Link>
+
+          <Link
+            className="cantus-nav-link"
+            to={`/g/${slug}/momentos`}
+          >
+            Momentos
+          </Link>
+
+          {podeAdministrarParoquia && (
+            <>
+              <Link
+                className="cantus-nav-link"
+                to={`/g/${slug}/integrantes`}
+              >
+                Integrantes
+              </Link>
+
+              <Link
+                className="cantus-nav-link"
+                to={`/g/${slug}/convites`}
+              >
+                Convites
+              </Link>
+
+              <Link
+                className="cantus-nav-link"
+                to="/paroquia/admin"
+              >
+                Admin. Paróquia
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>

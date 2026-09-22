@@ -39,22 +39,28 @@ export default function NovoGrupo() {
     setErro('');
 
     try {
-      const grupo=await api('/grupos',{
+      await api('/grupos',{
         method:'POST',
         body:JSON.stringify({
           nome,
           paroquiaId:paroquiaAtual.id,
           corTema,
-          slug:slugify(`${nome}-${Date.now().toString().slice(-6)}`)
+          slug:slugify(
+            `${nome}-${Date.now().toString().slice(-6)}`
+          )
         })
       });
 
-      localStorage.setItem(
-        'cantus_grupo_ativo',
-        JSON.stringify(grupo)
-      );
+      /*
+       * Depois de criar o grupo, voltamos para o Dashboard.
+       * O Dashboard recarrega /me/grupos e o novo grupo aparece
+       * na lista da paróquia ativa.
+       */
+      localStorage.removeItem('cantus_grupo_ativo');
 
-      navigate(`/g/${grupo.slug}`);
+      navigate('/dashboard',{
+        replace:true
+      });
     } catch (error) {
       setErro(
         error instanceof Error
@@ -68,8 +74,11 @@ export default function NovoGrupo() {
     <main className="cantus-page">
       <header className="border-b border-white/10 bg-[#0b0c0e]/90">
         <div className="cantus-shell h-20 flex items-center">
-          <Link to="/dashboard" className="cantus-eyebrow">
-            ← Cantus Dei
+          <Link
+            to="/dashboard"
+            className="cantus-eyebrow"
+          >
+            ← Dashboard
           </Link>
         </div>
       </header>
@@ -77,7 +86,9 @@ export default function NovoGrupo() {
       <section className="cantus-shell py-10 sm:py-14">
         <div className="grid lg:grid-cols-[.9fr_1.1fr] gap-8 lg:gap-12 items-start">
           <aside className="pt-2">
-            <div className="text-6xl cantus-gold">♫</div>
+            <div className="text-6xl cantus-gold">
+              ♫
+            </div>
 
             <div className="cantus-eyebrow mt-7">
               Novo ministério
