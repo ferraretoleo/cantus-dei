@@ -703,25 +703,38 @@ export default function MasterAdmin() {
                 Logo da paróquia
               </span>
 
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={async e=>{
-                  const file=e.target.files?.[0];
-                  if (!file) return;
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <label className="cantus-secondary px-5 py-3 cursor-pointer inline-flex items-center gap-2">
+                  <span>🖼️</span>
+                  <span>Selecionar logo</span>
 
-                  try {
-                    setLogoNova(await prepararLogo(file));
-                  } catch (error) {
-                    setErro(
-                      error instanceof Error
-                        ? error.message
-                        : 'Erro ao preparar a logo.'
-                    );
-                  }
-                }}
-                className="cantus-input mt-2"
-              />
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={async e=>{
+                      const file=e.target.files?.[0];
+                      if (!file) return;
+
+                      try {
+                        setLogoNova(await prepararLogo(file));
+                      } catch (error) {
+                        setErro(
+                          error instanceof Error
+                            ? error.message
+                            : 'Erro ao preparar a logo.'
+                        );
+                      }
+                    }}
+                  />
+                </label>
+
+                <span className="text-sm cantus-muted">
+                  {logoNova
+                    ? 'Logo selecionada'
+                    : 'PNG, JPG ou WEBP'}
+                </span>
+              </div>
             </label>
 
             {logoNova && (
@@ -812,25 +825,36 @@ export default function MasterAdmin() {
                           Alterar logo
                         </span>
 
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          onChange={async e=>{
-                            const file=e.target.files?.[0];
-                            if (!file) return;
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
+                          <label className="cantus-secondary px-5 py-3 cursor-pointer inline-flex items-center gap-2">
+                            <span>🖼️</span>
+                            <span>Escolher nova logo</span>
 
-                            try {
-                              setLogoSelecionada(await prepararLogo(file));
-                            } catch (error) {
-                              setErro(
-                                error instanceof Error
-                                  ? error.message
-                                  : 'Erro ao preparar a logo.'
-                              );
-                            }
-                          }}
-                          className="cantus-input mt-2"
-                        />
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="hidden"
+                              onChange={async e=>{
+                                const file=e.target.files?.[0];
+                                if (!file) return;
+
+                                try {
+                                  setLogoSelecionada(await prepararLogo(file));
+                                } catch (error) {
+                                  setErro(
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Erro ao preparar a logo.'
+                                  );
+                                }
+                              }}
+                            />
+                          </label>
+
+                          <span className="text-sm cantus-muted">
+                            PNG, JPG ou WEBP
+                          </span>
+                        </div>
                       </label>
 
                       <div className="mt-4 flex flex-wrap gap-3">
