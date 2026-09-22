@@ -1,23 +1,26 @@
-CANTUS DEI - LOGO COMO BOTÃO V7.1
+CANTUS DEI - CONTATOS DOS INTEGRANTES V7.2
 
 ALTERAÇÃO
 
-O campo padrão do navegador "Escolher ficheiro"
-foi substituído visualmente por botões do próprio Cantus Dei:
+Na tela Integrantes, cada card passa a mostrar claramente:
 
-[ 🖼️ Selecionar logo ]
+- Nome
+- Papel no ministério
+- E-mail
+- Telefone
+- Instrumento
+- Voz
 
-e, para paróquias já existentes:
+O e-mail fica clicável usando mailto:
+O telefone fica clicável usando tel:
 
-[ 🖼️ Escolher nova logo ]
+Caso o telefone não esteja cadastrado, aparece:
+"Telefone não informado"
 
-O input real de arquivo continua existindo oculto,
-portanto o funcionamento permanece o mesmo.
-
-Formatos aceitos:
-- PNG
-- JPG/JPEG
-- WEBP
+A API já retornava telefone e e-mail, portanto:
+- não precisa alterar backend
+- não precisa executar SQL
+- não precisa alterar Neon
 
 APLICAÇÃO
 
@@ -25,15 +28,12 @@ APLICAÇÃO
 D:\GitHub\cantus-dei
 
 2. Execute:
-python APLICAR-LOGO-BOTAO-V7-1.py
+python APLICAR-INTEGRANTES-CONTATO-V7-2.py
 
 3. Depois:
 npm run build
 
 4. Se passar:
 git add .
-git commit -m "Melhora botao de selecao da logo"
+git commit -m "Mostra contatos dos integrantes"
 git push origin main
-
-Não precisa executar SQL.
-Não altera API nem banco.
