@@ -3,11 +3,12 @@ import {
   unique, uuid, varchar
 } from 'drizzle-orm/pg-core';
 
-export const papelGrupoEnum = pgEnum('papel_grupo', ['RESPONSAVEL', 'COORDENADOR', 'MUSICO']);
-export const perfilGlobalEnum = pgEnum('perfil_global', ['USUARIO', 'MASTER']);
-export const conviteStatusEnum = pgEnum('convite_status', ['PENDENTE', 'ACEITO', 'EXPIRADO', 'CANCELADO']);
-export const missaStatusEnum = pgEnum('missa_status', ['RASCUNHO', 'PUBLICADA', 'ARQUIVADA']);
-export const confirmacaoEnum = pgEnum('confirmacao_status', ['PENDENTE', 'CONFIRMADO', 'AUSENTE']);
+export const papelGrupoEnum = pgEnum('papel_grupo', ['RESPONSAVEL','COORDENADOR','MUSICO']);
+export const papelParoquiaEnum = pgEnum('papel_paroquia', ['ADMIN_PAROQUIA','MEMBRO']);
+export const perfilGlobalEnum = pgEnum('perfil_global', ['USUARIO','MASTER']);
+export const conviteStatusEnum = pgEnum('convite_status', ['PENDENTE','ACEITO','EXPIRADO','CANCELADO']);
+export const missaStatusEnum = pgEnum('missa_status', ['RASCUNHO','PUBLICADA','ARQUIVADA']);
+export const confirmacaoEnum = pgEnum('confirmacao_status', ['PENDENTE','CONFIRMADO','AUSENTE']);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -25,16 +26,32 @@ export const users = pgTable('users', {
   ...timestamps
 });
 
-export const grupos = pgTable('grupos', {
+export const paroquias = pgTable('paroquias', {
   id: uuid('id').defaultRandom().primaryKey(),
-  nome: varchar('nome', { length: 120 }).notNull(),
-  paroquia: varchar('paroquia', { length: 160 }).notNull(),
+  nome: varchar('nome', { length: 160 }).notNull(),
   cidade: varchar('cidade', { length: 120 }).notNull(),
-  slug: varchar('slug', { length: 80 }).notNull().unique(),
-  corTema: varchar('cor_tema', { length: 7 }).default('#7C3AED').notNull(),
+  endereco: varchar('endereco', { length: 240 }),
   ativo: boolean('ativo').default(true).notNull(),
   ...timestamps
-});
+}, t => [unique('paroquias_nome_cidade_unq').on(t.nome,t.cidade)]);
+
+export const paroquiaMembros = pgTable('paroquia_membros', {
+  paroquiaId: uuid('paroquia_id').notNull().references(() => paroquias.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  papel: papelParoquiaEnum('papel').default('MEMBRO').notNull(),
+  ativo: boolean('ativo').default(true).notNull(),
+  ...timestamps
+}, t => [primaryKey({ columns: [t.paroquiaId,t.userId] })]);
+
+export const grupos = pgTable('grupos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  paroquiaId: uuid('paroquia_id').notNull().references(() => paroquias.id, { onDelete: 'cascade' }),
+  nome: varchar('nome', { length: 120 }).notNull(),
+  slug: varchar('slug', { length: 80 }).notNull().unique(),
+  corTema: varchar('cor_tema', { length: 7 }).default('#D5AE62').notNull(),
+  ativo: boolean('ativo').default(true).notNull(),
+  ...timestamps
+}, t => [index('grupos_paroquia_idx').on(t.paroquiaId)]);
 
 export const grupoMembros = pgTable('grupo_membros', {
   grupoId: uuid('grupo_id').notNull().references(() => grupos.id, { onDelete: 'cascade' }),
@@ -45,7 +62,7 @@ export const grupoMembros = pgTable('grupo_membros', {
   ativo: boolean('ativo').default(true).notNull(),
   entrouEm: timestamp('entrou_em', { withTimezone: true }).defaultNow().notNull(),
   ...timestamps
-}, t => [primaryKey({ columns: [t.grupoId, t.userId] })]);
+}, t => [primaryKey({ columns: [t.grupoId,t.userId] })]);
 
 export const convites = pgTable('convites', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -67,7 +84,7 @@ export const momentos = pgTable('momentos', {
   slug: varchar('slug', { length: 120 }).notNull(),
   grupoId: uuid('grupo_id').references(() => grupos.id, { onDelete: 'cascade' }),
   ...timestamps
-}, t => [unique('momentos_grupo_slug_unq').on(t.grupoId, t.slug)]);
+}, t => [unique('momentos_grupo_slug_unq').on(t.grupoId,t.slug)]);
 
 export const musicas = pgTable('musicas', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -86,12 +103,12 @@ export const musicas = pgTable('musicas', {
   compartilhada: boolean('compartilhada').default(false).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   ...timestamps
-}, t => [index('musicas_grupo_titulo_idx').on(t.grupoId, t.titulo)]);
+}, t => [index('musicas_grupo_titulo_idx').on(t.grupoId,t.titulo)]);
 
 export const musicaMomentos = pgTable('musica_momentos', {
   musicaId: uuid('musica_id').notNull().references(() => musicas.id, { onDelete: 'cascade' }),
   momentoId: uuid('momento_id').notNull().references(() => momentos.id, { onDelete: 'cascade' })
-}, t => [primaryKey({ columns: [t.musicaId, t.momentoId] })]);
+}, t => [primaryKey({ columns: [t.musicaId,t.momentoId] })]);
 
 export const missas = pgTable('missas', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -107,7 +124,7 @@ export const missas = pgTable('missas', {
   criadoPor: uuid('criado_por').notNull().references(() => users.id),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   ...timestamps
-}, t => [index('missas_grupo_data_idx').on(t.grupoId, t.dataHora)]);
+}, t => [index('missas_grupo_data_idx').on(t.grupoId,t.dataHora)]);
 
 export const missaMusicas = pgTable('missa_musicas', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -127,4 +144,4 @@ export const missaEscala = pgTable('missa_escala', {
   confirmacao: confirmacaoEnum('confirmacao').default('PENDENTE').notNull(),
   respondidoEm: timestamp('respondido_em', { withTimezone: true }),
   ...timestamps
-}, t => [primaryKey({ columns: [t.missaId, t.userId] })]);
+}, t => [primaryKey({ columns: [t.missaId,t.userId] })]);

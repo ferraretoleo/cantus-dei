@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import argon2 from 'argon2';
 import { loginSchema, registerSchema } from '@cantus-dei/shared';
 import { db } from '../db/client.js';
-import { users } from '../db/schema.js';
+import { paroquiaMembros, paroquias, users } from '../db/schema.js';
 
 function deveSerMaster(email: string) {
   const masterEmail = process.env.MASTER_EMAIL?.trim().toLowerCase();
@@ -23,10 +23,9 @@ export async function authRoutes(app: FastifyInstance) {
 
     const email = parsed.data.email.toLowerCase();
 
-    const existente = await db
-      .select({ id: users.id })
+    const existente = await db.select({ id: users.id })
       .from(users)
-      .where(eq(users.email, email))
+      .where(eq(users.email,email))
       .limit(1);
 
     if (existente.length) {
@@ -36,30 +35,58 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    const senhaHash = await argon2.hash(parsed.data.senha);
+    const [paroquia] = await db.select({ id: paroquias.id })
+      .from(paroquias)
+      .where(and(
+        eq(paroquias.id,parsed.data.paroquiaId),
+        eq(paroquias.ativo,true)
+      ))
+      .limit(1);
 
-    const [user] = await db
-      .insert(users)
-      .values({
+    if (!paroquia) {
+      return reply.code(400).send({
+        error: 'INVALID_PARISH',
+        message: 'Paróquia inválida ou inativa.'
+      });
+    }
+
+    const senhaHash = await argon2.hash(parsed.data.senha);
+    let userId: string | null = null;
+
+    try {
+      const [user] = await db.insert(users).values({
         nome: parsed.data.nome,
         email,
         telefone: parsed.data.telefone,
         senhaHash,
         perfilGlobal: deveSerMaster(email) ? 'MASTER' : 'USUARIO'
-      })
-      .returning({
+      }).returning({
         id: users.id,
         nome: users.nome,
         email: users.email,
         perfilGlobal: users.perfilGlobal
       });
 
-    const token = app.jwt.sign(
-      { sub: user.id, email: user.email },
-      { expiresIn: '12h' }
-    );
+      userId = user.id;
 
-    return reply.code(201).send({ user, token });
+      await db.insert(paroquiaMembros).values({
+        paroquiaId: parsed.data.paroquiaId,
+        userId: user.id,
+        papel: 'MEMBRO'
+      });
+
+      const token = app.jwt.sign(
+        { sub: user.id, email: user.email },
+        { expiresIn: '12h' }
+      );
+
+      return reply.code(201).send({ user,token });
+    } catch (error) {
+      if (userId) {
+        try { await db.delete(users).where(eq(users.id,userId)); } catch {}
+      }
+      throw error;
+    }
   });
 
   app.post('/auth/login', async (request, reply) => {
@@ -74,17 +101,12 @@ export async function authRoutes(app: FastifyInstance) {
 
     const email = parsed.data.email.toLowerCase();
 
-    let [user] = await db
-      .select()
+    let [user] = await db.select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(eq(users.email,email))
       .limit(1);
 
-    if (
-      !user ||
-      !user.ativo ||
-      !(await argon2.verify(user.senhaHash, parsed.data.senha))
-    ) {
+    if (!user || !user.ativo || !(await argon2.verify(user.senhaHash,parsed.data.senha))) {
       return reply.code(401).send({
         error: 'UNAUTHORIZED',
         message: 'E-mail ou senha inválidos.'
@@ -92,30 +114,25 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     if (deveSerMaster(email) && user.perfilGlobal !== 'MASTER') {
-      const [promovido] = await db
-        .update(users)
-        .set({
-          perfilGlobal: 'MASTER',
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, user.id))
+      const [promovido] = await db.update(users)
+        .set({ perfilGlobal:'MASTER',updatedAt:new Date() })
+        .where(eq(users.id,user.id))
         .returning();
-
       user = promovido;
     }
 
     const token = app.jwt.sign(
-      { sub: user.id, email: user.email },
-      { expiresIn: '12h' }
+      { sub:user.id,email:user.email },
+      { expiresIn:'12h' }
     );
 
     return {
       token,
       user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        perfilGlobal: user.perfilGlobal
+        id:user.id,
+        nome:user.nome,
+        email:user.email,
+        perfilGlobal:user.perfilGlobal
       }
     };
   });

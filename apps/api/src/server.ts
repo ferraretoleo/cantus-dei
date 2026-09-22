@@ -13,26 +13,30 @@ import { momentoRoutes } from './routes/momentos.js';
 import { missaRoutes } from './routes/missas.js';
 import { publicRoutes } from './routes/public.js';
 import { masterRoutes } from './routes/master.js';
+import { paroquiaRoutes } from './routes/paroquias.js';
+import { dashboardRoutes } from './routes/dashboard.js';
 
-const app = Fastify({ logger: true });
+const app=Fastify({ logger:true });
 
-const corsOrigins = (process.env.CORS_ORIGIN || '')
+const corsOrigins=(process.env.CORS_ORIGIN||'')
   .split(',')
-  .map(origin => origin.trim())
+  .map(origin=>origin.trim())
   .filter(Boolean);
 
-await app.register(cors, {
-  origin: corsOrigins.length ? corsOrigins : false,
-  credentials: true,
-  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400
+await app.register(cors,{
+  origin:corsOrigins.length?corsOrigins:false,
+  credentials:true,
+  methods:['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders:['Content-Type','Authorization'],
+  maxAge:86400
 });
 
 await app.register(authPlugin);
 await app.register(groupGuard);
 
 await app.register(authRoutes);
+await app.register(paroquiaRoutes);
+await app.register(dashboardRoutes);
 await app.register(groupRoutes);
 await app.register(inviteRoutes);
 await app.register(musicRoutes);
@@ -41,39 +45,37 @@ await app.register(missaRoutes);
 await app.register(publicRoutes);
 await app.register(masterRoutes);
 
-app.get('/health', async () => ({
-  status: 'ok',
-  service: 'cantus-dei-api'
+app.get('/health',async()=>({
+  status:'ok',
+  service:'cantus-dei-api'
 }));
 
-app.setErrorHandler((error, _request, reply) => {
+app.setErrorHandler((error,_request,reply)=>{
   app.log.error(error);
 
-  const statusCode =
-    typeof error === 'object' &&
-    error !== null &&
+  const statusCode=
+    typeof error==='object' &&
+    error!==null &&
     'statusCode' in error &&
-    typeof error.statusCode === 'number'
+    typeof error.statusCode==='number'
       ? error.statusCode
       : 500;
 
-  const message =
-    typeof error === 'object' &&
-    error !== null &&
+  const message=
+    typeof error==='object' &&
+    error!==null &&
     'message' in error &&
-    typeof error.message === 'string'
+    typeof error.message==='string'
       ? error.message
       : 'Erro interno do servidor.';
 
   reply.code(statusCode).send({
-    error: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR',
-    message: statusCode >= 500
-      ? 'Erro interno do servidor.'
-      : message
+    error:statusCode>=500?'INTERNAL_ERROR':'REQUEST_ERROR',
+    message:statusCode>=500?'Erro interno do servidor.':message
   });
 });
 
 await app.listen({
-  port: Number(process.env.PORT ?? 3000),
-  host: '0.0.0.0'
+  port:Number(process.env.PORT??3000),
+  host:'0.0.0.0'
 });

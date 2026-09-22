@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
-export const papelGrupoSchema = z.enum(['RESPONSAVEL', 'COORDENADOR', 'MUSICO']);
+export const papelGrupoSchema = z.enum(['RESPONSAVEL','COORDENADOR','MUSICO']);
+export const papelParoquiaSchema = z.enum(['ADMIN_PAROQUIA','MEMBRO']);
 
 export const registerSchema = z.object({
   nome: z.string().min(2).max(120),
   email: z.string().email().max(255),
   senha: z.string().min(8).max(128),
-  telefone: z.string().max(30).optional()
+  telefone: z.string().max(30).optional(),
+  paroquiaId: z.string().uuid()
 });
 
 export const loginSchema = z.object({
@@ -14,21 +16,29 @@ export const loginSchema = z.object({
   senha: z.string().min(1)
 });
 
+export const createParoquiaSchema = z.object({
+  nome: z.string().min(2).max(160),
+  cidade: z.string().min(2).max(120),
+  endereco: z.string().max(240).optional().nullable()
+});
+
+export const associarParoquiaSchema = z.object({
+  userId: z.string().uuid(),
+  papel: papelParoquiaSchema.default('MEMBRO')
+});
+
 export const createGrupoSchema = z.object({
   nome: z.string().min(2).max(120),
-  paroquia: z.string().min(2).max(160),
-  cidade: z.string().min(2).max(120),
+  paroquiaId: z.string().uuid(),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(3).max(80),
-  corTema: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#7C3AED')
+  corTema: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#D5AE62')
 });
 
 export const createConviteSchema = z.object({
   email: z.string().email().optional(),
   telefone: z.string().min(8).max(30).optional(),
   papelProposto: papelGrupoSchema.default('MUSICO')
-}).refine(v => v.email || v.telefone, {
-  message: 'Informe e-mail ou telefone.'
-});
+}).refine(v => v.email || v.telefone, { message: 'Informe e-mail ou telefone.' });
 
 export const musicaSchema = z.object({
   titulo: z.string().min(2).max(220),
@@ -64,7 +74,7 @@ export const repertorioSchema = z.object({
     musicaId: z.string().uuid(),
     tomDaExecucao: z.string().max(20).optional().nullable(),
     observacao: z.string().optional().nullable()
-  })).max(50)
+  })).max(100)
 });
 
 export const escalaSchema = z.object({
@@ -75,5 +85,5 @@ export const escalaSchema = z.object({
 });
 
 export const confirmacaoSchema = z.object({
-  confirmacao: z.enum(['CONFIRMADO', 'AUSENTE'])
+  confirmacao: z.enum(['CONFIRMADO','AUSENTE'])
 });
