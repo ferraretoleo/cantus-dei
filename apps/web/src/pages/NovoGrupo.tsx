@@ -1,15 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
-type Paroquia = {
-  id: string;
-  nome: string;
-  cidade: string;
-  papel: 'ADMIN_PAROQUIA' | 'MEMBRO';
-};
-
-function slugify(texto: string) {
+function slugify(texto:string) {
   return texto
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'')
@@ -19,26 +13,26 @@ function slugify(texto: string) {
 }
 
 export default function NovoGrupo() {
-  const navigate = useNavigate();
-  const [paroquias,setParoquias] = useState<Paroquia[]>([]);
-  const [form,setForm] = useState({
-    nome:'',
-    paroquiaId:'',
-    corTema:'#D5AE62'
-  });
-  const [erro,setErro] = useState('');
+  const navigate=useNavigate();
+  const { user,paroquiaAtiva }=useAuth();
 
-  useEffect(() => {
-    api('/me/paroquias')
-      .then((data:Paroquia[]) => {
-        const admins=data.filter(p=>p.papel==='ADMIN_PAROQUIA');
-        setParoquias(admins);
-        if (admins.length===1) {
-          setForm(v=>({ ...v,paroquiaId:admins[0].id }));
-        }
-      })
-      .catch(e=>setErro(e.message));
-  },[]);
+  const [nome,setNome]=useState('');
+  const [corTema,setCorTema]=useState('#D5AE62');
+  const [erro,setErro]=useState('');
+
+  if (!paroquiaAtiva) {
+    return <Navigate to="/paroquias" replace />;
+  }
+
+  const paroquiaAtual = paroquiaAtiva;
+
+  const podeCriar=
+    user?.perfilGlobal==='MASTER' ||
+    paroquiaAtual.papel==='ADMIN_PAROQUIA';
+
+  if (!podeCriar) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   async function submit(e:FormEvent) {
     e.preventDefault();
@@ -48,17 +42,25 @@ export default function NovoGrupo() {
       const grupo=await api('/grupos',{
         method:'POST',
         body:JSON.stringify({
-          nome:form.nome,
-          paroquiaId:form.paroquiaId,
-          corTema:form.corTema,
-          slug:slugify(`${form.nome}-${Date.now().toString().slice(-5)}`)
+          nome,
+          paroquiaId:paroquiaAtual.id,
+          corTema,
+          slug:slugify(`${nome}-${Date.now().toString().slice(-6)}`)
         })
       });
 
-      localStorage.setItem('cantus_grupo_ativo',JSON.stringify(grupo));
+      localStorage.setItem(
+        'cantus_grupo_ativo',
+        JSON.stringify(grupo)
+      );
+
       navigate(`/g/${grupo.slug}`);
     } catch (error) {
-      setErro(error instanceof Error?error.message:'Erro ao criar grupo.');
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao criar grupo.'
+      );
     }
   }
 
@@ -76,46 +78,48 @@ export default function NovoGrupo() {
         <div className="grid lg:grid-cols-[.9fr_1.1fr] gap-8 lg:gap-12 items-start">
           <aside className="pt-2">
             <div className="text-6xl cantus-gold">♫</div>
-            <div className="cantus-eyebrow mt-7">Novo ministério</div>
+
+            <div className="cantus-eyebrow mt-7">
+              Novo ministério
+            </div>
 
             <h1 className="cantus-display mt-4 text-5xl sm:text-6xl leading-[.95]">
               Crie o grupo
               <span className="block cantus-gold">
-                dentro da paróquia.
+                nesta paróquia.
               </span>
             </h1>
 
             <p className="mt-6 max-w-lg cantus-muted leading-7">
-              Somente administradores de paróquia podem criar grupos.
-              Todos os dados do grupo ficarão vinculados à paróquia selecionada.
+              {paroquiaAtual.nome} · {paroquiaAtual.cidade}
             </p>
           </aside>
 
-          <form onSubmit={submit} className="cantus-card p-6 sm:p-8">
-            <div className="cantus-eyebrow">Dados do grupo</div>
+          <form
+            onSubmit={submit}
+            className="cantus-card p-6 sm:p-8"
+          >
+            <div className="cantus-eyebrow">
+              Dados do grupo
+            </div>
+
             <h2 className="cantus-display mt-3 text-3xl">
               Criar novo grupo
             </h2>
 
-            <label className="block mt-5">
-              <span className="text-sm font-semibold text-[#d9d2c6]">
+            <div className="mt-5 rounded-xl border border-white/10 bg-white/[.025] p-4">
+              <div className="text-xs uppercase tracking-[.14em] cantus-gold">
                 Paróquia
-              </span>
+              </div>
 
-              <select
-                required
-                value={form.paroquiaId}
-                onChange={e=>setForm({ ...form,paroquiaId:e.target.value })}
-                className="cantus-input mt-2"
-              >
-                <option value="">Selecione</option>
-                {paroquias.map(p=>(
-                  <option key={p.id} value={p.id}>
-                    {p.nome} · {p.cidade}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="mt-2 font-semibold">
+                {paroquiaAtual.nome}
+              </div>
+
+              <div className="text-sm cantus-muted">
+                {paroquiaAtual.cidade}
+              </div>
+            </div>
 
             <label className="block mt-5">
               <span className="text-sm font-semibold text-[#d9d2c6]">
@@ -124,8 +128,8 @@ export default function NovoGrupo() {
 
               <input
                 required
-                value={form.nome}
-                onChange={e=>setForm({ ...form,nome:e.target.value })}
+                value={nome}
+                onChange={e=>setNome(e.target.value)}
                 placeholder="Ex.: Ministério São José"
                 className="cantus-input mt-2"
               />
@@ -138,17 +142,11 @@ export default function NovoGrupo() {
 
               <input
                 type="color"
-                value={form.corTema}
-                onChange={e=>setForm({ ...form,corTema:e.target.value })}
+                value={corTema}
+                onChange={e=>setCorTema(e.target.value)}
                 className="mt-2 w-14 h-12 rounded-xl bg-transparent border border-white/10 p-1"
               />
             </label>
-
-            {!paroquias.length && (
-              <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 text-amber-200">
-                Você ainda não é administrador de nenhuma paróquia.
-              </div>
-            )}
 
             {erro && (
               <div className="mt-5 rounded-xl border border-red-500/20 bg-red-950/30 p-4 text-red-200">
@@ -157,14 +155,14 @@ export default function NovoGrupo() {
             )}
 
             <div className="mt-7 flex gap-3">
-              <button
-                disabled={!paroquias.length}
-                className="cantus-primary px-6 py-3 disabled:opacity-50"
-              >
+              <button className="cantus-primary px-6 py-3">
                 Criar grupo
               </button>
 
-              <Link to="/dashboard" className="cantus-secondary px-6 py-3">
+              <Link
+                to="/dashboard"
+                className="cantus-secondary px-6 py-3"
+              >
                 Cancelar
               </Link>
             </div>

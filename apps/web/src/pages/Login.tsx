@@ -24,7 +24,7 @@ export default function Login() {
       });
 
       login(data.token, data.user);
-      navigate('/dashboard');
+      navigate('/paroquias', { replace: true });
     } catch (error) {
       setErro(
         error instanceof Error
@@ -40,7 +40,6 @@ export default function Login() {
     <main className="cantus-page min-h-screen grid lg:grid-cols-[1.2fr_.8fr]">
       <section className="hidden lg:flex cantus-staff relative min-h-screen items-end overflow-hidden border-r border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(213,174,98,.13),transparent_25rem),linear-gradient(155deg,#171014_0%,#0b0c0e_58%,#111214_100%)]" />
-
         <div className="absolute right-[8%] top-[13%] cantus-vinyl opacity-90" />
 
         <div className="relative z-10 p-12 xl:p-16 max-w-3xl">
@@ -56,33 +55,18 @@ export default function Login() {
           </h1>
 
           <p className="mt-7 max-w-xl text-lg leading-8 cantus-muted">
-            Organize repertórios, músicos, cifras, partituras e
-            celebrações sem perder a essência do ministério.
+            Entre e escolha a paróquia que deseja acessar.
           </p>
-
-          <div className="mt-10 cantus-quote max-w-xl">
-            <div className="cantus-display text-2xl">
-              “Cantai ao Senhor um cântico novo.”
-            </div>
-            <div className="mt-2 text-sm cantus-gold">
-              Salmo 95(96),1
-            </div>
-          </div>
         </div>
       </section>
 
       <section className="min-h-screen flex items-center justify-center p-5 sm:p-8">
-        <form
-          onSubmit={submit}
-          className="w-full max-w-md"
-        >
+        <form onSubmit={submit} className="w-full max-w-md">
           <div className="lg:hidden cantus-eyebrow mb-8">
             Cantus Dei
           </div>
 
-          <div className="text-4xl select-none mb-6">
-            ♫
-          </div>
+          <div className="text-4xl select-none mb-6">♫</div>
 
           <div className="cantus-eyebrow">
             Bem-vindo ao Cantus Dei
@@ -95,22 +79,16 @@ export default function Login() {
             </span>
           </h2>
 
-          <p className="mt-4 cantus-muted">
-            Acesse seus grupos, repertórios e próximas celebrações.
-          </p>
-
           <label className="block mt-8">
             <span className="text-sm font-semibold text-[#d9d2c6]">
               E-mail
             </span>
-
             <input
               required
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="cantus-input mt-2"
-              placeholder="seu@email.com"
             />
           </label>
 
@@ -118,14 +96,12 @@ export default function Login() {
             <span className="text-sm font-semibold text-[#d9d2c6]">
               Senha
             </span>
-
             <input
               required
               type="password"
               value={senha}
               onChange={e => setSenha(e.target.value)}
               className="cantus-input mt-2"
-              placeholder="••••••••"
             />
           </label>
 
@@ -144,10 +120,7 @@ export default function Login() {
 
           <p className="mt-6 text-center text-sm cantus-muted">
             Ainda não participa?{' '}
-            <Link
-              className="font-bold cantus-gold"
-              to="/registrar"
-            >
+            <Link className="font-bold cantus-gold" to="/registrar">
               Criar conta
             </Link>
           </p>

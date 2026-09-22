@@ -11,7 +11,9 @@ import MasterRoute from './components/MasterRoute';
 
 import Login from './pages/Login';
 import Registrar from './pages/Registrar';
+import SelecionarParoquia from './pages/SelecionarParoquia';
 import Dashboard from './pages/Dashboard';
+import ParoquiaAdmin from './pages/ParoquiaAdmin';
 import NovoGrupo from './pages/NovoGrupo';
 import GrupoHome from './pages/GrupoHome';
 import Integrantes from './pages/Integrantes';
@@ -30,14 +32,28 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route
+            path="/"
+            element={<Navigate to="/login" replace />}
+          />
+
           <Route path="/login" element={<Login />} />
           <Route path="/registrar" element={<Registrar />} />
 
-          <Route path="/convites/:token" element={<AceitarConvite />} />
+          <Route
+            path="/convites/:token"
+            element={<AceitarConvite />}
+          />
 
-          <Route path="/celebracao/:token" element={<CelebracaoPublica />} />
-          <Route path="/celebracao/:token/palco" element={<ModoPalco />} />
+          <Route
+            path="/celebracao/:token"
+            element={<CelebracaoPublica />}
+          />
+
+          <Route
+            path="/celebracao/:token/palco"
+            element={<ModoPalco />}
+          />
 
           <Route
             path="/master"
@@ -48,17 +64,109 @@ export default function App() {
             }
           />
 
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/grupos/novo" element={<ProtectedRoute><NovoGrupo /></ProtectedRoute>} />
-          <Route path="/g/:slug" element={<ProtectedRoute><GrupoHome /></ProtectedRoute>} />
-          <Route path="/g/:slug/calendario" element={<ProtectedRoute><Calendario /></ProtectedRoute>} />
-          <Route path="/g/:slug/missas/:missaId" element={<ProtectedRoute><MissaEditor /></ProtectedRoute>} />
-          <Route path="/g/:slug/musicas" element={<ProtectedRoute><Musicas /></ProtectedRoute>} />
-          <Route path="/g/:slug/momentos" element={<ProtectedRoute><MomentosLiturgicos /></ProtectedRoute>} />
-          <Route path="/g/:slug/integrantes" element={<ProtectedRoute><Integrantes /></ProtectedRoute>} />
-          <Route path="/g/:slug/convites" element={<ProtectedRoute><Convites /></ProtectedRoute>} />
+          <Route
+            path="/paroquias"
+            element={
+              <ProtectedRoute>
+                <SelecionarParoquia />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/paroquia/admin"
+            element={
+              <ProtectedRoute>
+                <ParoquiaAdmin />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/grupos/novo"
+            element={
+              <ProtectedRoute>
+                <NovoGrupo />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug"
+            element={
+              <ProtectedRoute>
+                <GrupoHome />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/calendario"
+            element={
+              <ProtectedRoute>
+                <Calendario />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/missas/:missaId"
+            element={
+              <ProtectedRoute>
+                <MissaEditor />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/musicas"
+            element={
+              <ProtectedRoute>
+                <Musicas />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/momentos"
+            element={
+              <ProtectedRoute>
+                <MomentosLiturgicos />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/integrantes"
+            element={
+              <ProtectedRoute>
+                <Integrantes />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/g/:slug/convites"
+            element={
+              <ProtectedRoute>
+                <Convites />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

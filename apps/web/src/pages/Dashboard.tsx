@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import PsalmHighlight from '../components/PsalmHighlight';
@@ -11,15 +11,8 @@ type Grupo = {
   paroquia:string;
   cidade:string;
   paroquiaId:string;
-  papel:string;
+  papel:string | null;
   corTema?:string;
-};
-
-type Paroquia = {
-  id:string;
-  nome:string;
-  cidade:string;
-  papel:'ADMIN_PAROQUIA'|'MEMBRO';
 };
 
 type AgendaItem = {
@@ -51,10 +44,14 @@ function nomeMes(data:Date) {
 
 export default function Dashboard() {
   const navigate=useNavigate();
-  const {user,logout}=useAuth();
+  const {
+    user,
+    logout,
+    paroquiaAtiva,
+    limparParoquia
+  }=useAuth();
 
   const [grupos,setGrupos]=useState<Grupo[]>([]);
-  const [paroquias,setParoquias]=useState<Paroquia[]>([]);
   const [agenda,setAgenda]=useState<AgendaItem[]>([]);
   const [mes,setMes]=useState(()=>{
     const d=new Date();
@@ -62,37 +59,69 @@ export default function Dashboard() {
   });
   const [erro,setErro]=useState('');
 
-  const podeCriarGrupo=useMemo(
-    ()=>paroquias.some(p=>p.papel==='ADMIN_PAROQUIA'),
-    [paroquias]
-  );
+  if (!paroquiaAtiva) {
+    return <Navigate to="/paroquias" replace />;
+  }
 
-  async function carregarBase() {
+  const paroquiaAtual = paroquiaAtiva;
+
+  const podeAdministrar =
+    user?.perfilGlobal==='MASTER' ||
+    paroquiaAtual.papel==='ADMIN_PAROQUIA';
+
+  const podeCriarGrupo=podeAdministrar;
+
+  async function carregarGrupos() {
     try {
-      const [g,p]=await Promise.all([
-        api('/me/grupos'),
-        api('/me/paroquias')
-      ]);
-      setGrupos(g);
-      setParoquias(p);
+      setGrupos(
+        await api(
+          `/me/grupos?paroquiaId=${encodeURIComponent(paroquiaAtual.id)}`
+        )
+      );
     } catch (e) {
-      setErro(e instanceof Error?e.message:'Erro ao carregar dashboard.');
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Erro ao carregar grupos.'
+      );
     }
   }
 
   async function carregarAgenda(data:Date) {
     try {
-      setAgenda(await api(`/me/agenda?mes=${chaveMes(data)}`));
+      setAgenda(
+        await api(
+          `/me/agenda?mes=${chaveMes(data)}&paroquiaId=${encodeURIComponent(paroquiaAtual.id)}`
+        )
+      );
     } catch (e) {
-      setErro(e instanceof Error?e.message:'Erro ao carregar agenda.');
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Erro ao carregar agenda.'
+      );
     }
   }
 
-  useEffect(()=>{ carregarBase(); },[]);
-  useEffect(()=>{ carregarAgenda(mes); },[mes]);
+  useEffect(()=>{
+    carregarGrupos();
+  },[paroquiaAtual.id]);
+
+  useEffect(()=>{
+    carregarAgenda(mes);
+  },[mes,paroquiaAtual.id]);
 
   function abrirGrupo(grupo:Grupo) {
-    localStorage.setItem('cantus_grupo_ativo',JSON.stringify(grupo));
+    localStorage.setItem(
+      'cantus_grupo_ativo',
+      JSON.stringify({
+        ...grupo,
+        papel:
+          grupo.papel ||
+          (podeAdministrar ? 'RESPONSAVEL' : 'MUSICO')
+      })
+    );
+
     navigate(`/g/${grupo.slug}`);
   }
 
@@ -100,7 +129,16 @@ export default function Dashboard() {
     const grupo=grupos.find(g=>g.id===item.grupoId);
     if (!grupo) return;
 
-    localStorage.setItem('cantus_grupo_ativo',JSON.stringify(grupo));
+    localStorage.setItem(
+      'cantus_grupo_ativo',
+      JSON.stringify({
+        ...grupo,
+        papel:
+          grupo.papel ||
+          (podeAdministrar ? 'RESPONSAVEL' : 'MUSICO')
+      })
+    );
+
     navigate(`/g/${grupo.slug}/missas/${item.missaId}`);
   }
 
@@ -115,24 +153,44 @@ export default function Dashboard() {
           <div>
             <div className="cantus-eyebrow">Cantus Dei</div>
             <div className="mt-1 text-sm cantus-muted">
-              {user?.nome}
-              {user?.perfilGlobal==='MASTER' && (
-                <span className="ml-2 text-[10px] font-extrabold tracking-wider cantus-gold">
-                  MASTER
-                </span>
-              )}
+              {paroquiaAtual.nome} · {paroquiaAtual.cidade}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {podeAdministrar && (
+              <Link
+                to="/paroquia/admin"
+                className="cantus-secondary px-4 py-2 text-sm"
+              >
+                Administrar paróquia
+              </Link>
+            )}
+
             {user?.perfilGlobal==='MASTER' && (
-              <Link to="/master" className="cantus-secondary px-4 py-2 text-sm">
-                Administração
+              <Link
+                to="/master"
+                className="cantus-secondary px-4 py-2 text-sm"
+              >
+                Global
               </Link>
             )}
 
             <button
-              onClick={()=>{ logout();navigate('/login'); }}
+              onClick={()=>{
+                limparParoquia();
+                navigate('/paroquias');
+              }}
+              className="cantus-nav-link"
+            >
+              Trocar paróquia
+            </button>
+
+            <button
+              onClick={()=>{
+                logout();
+                navigate('/login');
+              }}
               className="cantus-nav-link"
             >
               Sair
@@ -144,19 +202,25 @@ export default function Dashboard() {
       <section className="cantus-shell pt-8 sm:pt-11 pb-14">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
           <div>
-            <div className="cantus-eyebrow">Agenda do músico</div>
+            <div className="cantus-eyebrow">
+              Agenda do músico
+            </div>
+
             <h1 className="cantus-display mt-3 text-5xl sm:text-6xl leading-[.95]">
               Missas e
               <span className="cantus-gold"> escalas.</span>
             </h1>
+
             <p className="mt-4 cantus-muted">
-              Tudo o que acontece nos grupos em que você participa,
-              separado por paróquia.
+              {paroquiaAtual.nome}
             </p>
           </div>
 
           {podeCriarGrupo && (
-            <Link to="/grupos/novo" className="cantus-primary px-6 py-3 self-start">
+            <Link
+              to="/grupos/novo"
+              className="cantus-primary px-6 py-3 self-start"
+            >
               + Novo grupo
             </Link>
           )}
@@ -172,17 +236,27 @@ export default function Dashboard() {
           <section className="cantus-card p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="cantus-eyebrow">Agenda mensal</div>
+                <div className="cantus-eyebrow">
+                  Agenda mensal
+                </div>
+
                 <h2 className="cantus-display mt-2 text-3xl capitalize">
                   {nomeMes(mes)}
                 </h2>
               </div>
 
               <div className="flex gap-2">
-                <button onClick={()=>mudarMes(-1)} className="cantus-secondary px-4 py-2 text-sm">
+                <button
+                  onClick={()=>mudarMes(-1)}
+                  className="cantus-secondary px-4 py-2 text-sm"
+                >
                   ← Anterior
                 </button>
-                <button onClick={()=>mudarMes(1)} className="cantus-secondary px-4 py-2 text-sm">
+
+                <button
+                  onClick={()=>mudarMes(1)}
+                  className="cantus-secondary px-4 py-2 text-sm"
+                >
                   Próximo →
                 </button>
               </div>
@@ -201,13 +275,20 @@ export default function Dashboard() {
                     <div className="flex gap-4 items-start">
                       <div className="w-14 shrink-0 text-center">
                         <div className="text-xs uppercase cantus-gold">
-                          {new Intl.DateTimeFormat('pt-BR',{weekday:'short'}).format(dt)}
+                          {new Intl.DateTimeFormat('pt-BR',{
+                            weekday:'short'
+                          }).format(dt)}
                         </div>
+
                         <div className="cantus-display text-3xl">
                           {dt.getDate()}
                         </div>
+
                         <div className="text-xs cantus-muted">
-                          {new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'}).format(dt)}
+                          {new Intl.DateTimeFormat('pt-BR',{
+                            hour:'2-digit',
+                            minute:'2-digit'
+                          }).format(dt)}
                         </div>
                       </div>
 
@@ -215,12 +296,16 @@ export default function Dashboard() {
                         <div className="cantus-display text-xl">
                           {item.tipoCelebracao}
                         </div>
+
                         <div className="mt-1 text-sm cantus-muted">
-                          {item.grupoNome} · {item.paroquiaNome}
+                          {item.grupoNome}
                         </div>
+
                         <div className="mt-1 text-xs cantus-muted">
                           {item.local}
-                          {item.instrumentoVoz ? ` · ${item.instrumentoVoz}` : ''}
+                          {item.instrumentoVoz
+                            ? ` · ${item.instrumentoVoz}`
+                            : ''}
                         </div>
 
                         <div className="flex flex-wrap gap-2 mt-3">
@@ -229,6 +314,7 @@ export default function Dashboard() {
                               Escala: {item.confirmacao}
                             </span>
                           )}
+
                           <span className="cantus-badge opacity-70">
                             {item.status}
                           </span>
@@ -245,9 +331,6 @@ export default function Dashboard() {
                   <div className="cantus-display mt-4 text-2xl">
                     Nenhuma celebração neste mês.
                   </div>
-                  <p className="mt-2 text-sm cantus-muted">
-                    Use as setas para consultar os próximos meses.
-                  </p>
                 </div>
               )}
             </div>
@@ -256,12 +339,18 @@ export default function Dashboard() {
           <aside>
             <div className="flex items-end justify-between gap-3 mb-4">
               <div>
-                <div className="cantus-eyebrow">Seus grupos</div>
+                <div className="cantus-eyebrow">
+                  Grupos desta paróquia
+                </div>
+
                 <h2 className="cantus-display mt-2 text-3xl">
                   Ministérios
                 </h2>
               </div>
-              <span className="text-sm cantus-muted">{grupos.length}</span>
+
+              <span className="text-sm cantus-muted">
+                {grupos.length}
+              </span>
             </div>
 
             <div className="space-y-3">
@@ -280,19 +369,22 @@ export default function Dashboard() {
                       <div className="cantus-display text-xl truncate">
                         {grupo.nome}
                       </div>
-                      <div className="mt-1 text-xs cantus-muted truncate">
-                        {grupo.paroquia} · {grupo.cidade}
+
+                      <div className="mt-1 text-xs cantus-muted">
+                        {grupo.papel || (podeAdministrar ? 'ADMINISTRAÇÃO' : '')}
                       </div>
                     </div>
 
-                    <div className="text-lg text-white/20 group-hover:text-[#d5ae62]">→</div>
+                    <div className="text-lg text-white/20 group-hover:text-[#d5ae62]">
+                      →
+                    </div>
                   </div>
                 </button>
               ))}
 
               {!grupos.length && (
                 <div className="cantus-card p-6 text-center cantus-muted">
-                  Você ainda não participa de grupos.
+                  Nenhum grupo disponível nesta paróquia.
                 </div>
               )}
             </div>
@@ -303,16 +395,32 @@ export default function Dashboard() {
           <PsalmHighlight />
 
           <div className="cantus-card p-6 sm:p-8">
-            <div className="cantus-eyebrow">Atalho rápido</div>
+            <div className="cantus-eyebrow">
+              Atalho rápido
+            </div>
+
             <h3 className="cantus-display mt-3 text-3xl">
-              Entre no seu ministério
+              {podeAdministrar
+                ? 'Organize sua paróquia'
+                : 'Entre no seu ministério'}
             </h3>
+
             <p className="mt-3 leading-7 cantus-muted">
-              Abra um grupo para consultar repertório, calendário,
-              integrantes, momentos litúrgicos e convites.
+              {podeAdministrar
+                ? 'Cadastre músicos, crie grupos e associe integrantes aos ministérios.'
+                : 'Abra um grupo para consultar repertório, calendário e escala.'}
             </p>
 
-            {grupos[0] && (
+            {podeAdministrar && (
+              <Link
+                to="/paroquia/admin"
+                className="cantus-primary inline-block mt-6 px-5 py-2.5 text-sm"
+              >
+                Administrar músicos e grupos
+              </Link>
+            )}
+
+            {!podeAdministrar && grupos[0] && (
               <button
                 onClick={()=>abrirGrupo(grupos[0])}
                 className="cantus-secondary mt-6 px-5 py-2.5 text-sm"
@@ -321,18 +429,17 @@ export default function Dashboard() {
               </button>
             )}
 
-            {!!paroquias.length && (
-              <div className="mt-7 border-t border-white/10 pt-5">
-                <div className="cantus-eyebrow">Paróquias vinculadas</div>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {paroquias.map(p=>(
-                    <span key={p.id} className="cantus-badge">
-                      {p.nome} · {p.papel}
-                    </span>
-                  ))}
-                </div>
+            <div className="mt-7 border-t border-white/10 pt-5">
+              <div className="cantus-eyebrow">
+                Paróquia ativa
               </div>
-            )}
+
+              <div className="mt-3">
+                <span className="cantus-badge">
+                  {paroquiaAtual.nome} · {paroquiaAtual.papel}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

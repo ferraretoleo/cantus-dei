@@ -1,18 +1,24 @@
-CORREÇÃO TS18047 - GrupoHome.tsx
+CORREÇÃO TS18047 - PAROQUIA ATIVA
 
-O TypeScript não preserva a garantia de que 'grupo' não é null dentro
-da função assíncrona excluirGrupo().
+Arquivos corrigidos:
+- apps/web/src/pages/Dashboard.tsx
+- apps/web/src/pages/NovoGrupo.tsx
+- apps/web/src/pages/ParoquiaAdmin.tsx
 
-A correção cria:
-const grupoAtual = grupo;
+Causa:
+O TypeScript não preservava a garantia de que paroquiaAtiva não era null
+dentro das funções assíncronas.
 
-logo após a validação:
-
-if (!grupo || grupo.slug !== slug) {
-  return <Navigate to="/dashboard" replace />;
+Correção:
+Após:
+if (!paroquiaAtiva) {
+  return <Navigate to="/paroquias" replace />;
 }
 
-Depois todas as referências usam grupoAtual.
+foi criada uma referência estável:
+const paroquiaAtual = paroquiaAtiva;
+
+Todas as funções passam a usar paroquiaAtual.
 
 APLICAÇÃO
 
@@ -24,5 +30,7 @@ npm run build
 
 3. Se passar:
 git add .
-git commit -m "Corrige tipagem na exclusao de grupo"
+git commit -m "Corrige tipagem da paroquia ativa"
 git push origin main
+
+Não precisa executar SQL.

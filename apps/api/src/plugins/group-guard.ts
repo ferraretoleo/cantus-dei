@@ -2,7 +2,12 @@ import fp from 'fastify-plugin';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { grupoMembros } from '../db/schema.js';
+import {
+  grupoMembros,
+  grupos,
+  paroquiaMembros,
+  users
+} from '../db/schema.js';
 
 export type Papel = 'RESPONSAVEL' | 'COORDENADOR' | 'MUSICO';
 
@@ -26,8 +31,55 @@ export default fp(async app => {
         });
       }
 
+      const [usuario] = await db
+        .select({
+          perfilGlobal: users.perfilGlobal
+        })
+        .from(users)
+        .where(eq(users.id, request.user.sub))
+        .limit(1);
+
+      if (usuario?.perfilGlobal === 'MASTER') {
+        request.groupAccess = {
+          grupoId,
+          papel: 'RESPONSAVEL'
+        };
+        return;
+      }
+
+      const [adminParoquia] = await db
+        .select({
+          papel: paroquiaMembros.papel
+        })
+        .from(grupos)
+        .innerJoin(
+          paroquiaMembros,
+          and(
+            eq(paroquiaMembros.paroquiaId, grupos.paroquiaId),
+            eq(paroquiaMembros.userId, request.user.sub),
+            eq(paroquiaMembros.ativo, true)
+          )
+        )
+        .where(
+          and(
+            eq(grupos.id, grupoId),
+            eq(paroquiaMembros.papel, 'ADMIN_PAROQUIA')
+          )
+        )
+        .limit(1);
+
+      if (adminParoquia) {
+        request.groupAccess = {
+          grupoId,
+          papel: 'RESPONSAVEL'
+        };
+        return;
+      }
+
       const [membro] = await db
-        .select({ papel: grupoMembros.papel })
+        .select({
+          papel: grupoMembros.papel
+        })
         .from(grupoMembros)
         .where(
           and(
