@@ -3,28 +3,32 @@ import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { momentoSchema } from '@cantus-dei/shared';
 import { z } from 'zod';
 import { db } from '../db/client.js';
-import { momentos, musicaMomentos, musicas } from '../db/schema.js';
+import {
+  momentos,
+  musicaMomentos,
+  musicas
+} from '../db/schema.js';
 
 const vinculoSchema = z.object({
   momentoIds: z.array(z.string().uuid()).max(30)
 });
 
-function slugify(texto: string) {
+function slugify(texto:string) {
   return texto
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g,'')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 120);
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-|-$/g,'')
+    .slice(0,120);
 }
 
-export async function momentoRoutes(app: FastifyInstance) {
+export async function momentoRoutes(app:FastifyInstance) {
   app.get(
     '/grupos/:id/momentos',
-    { preHandler: (req, rep) => app.requireGroupAccess(req, rep) },
-    async request => {
-      const grupoId = (request.params as { id: string }).id;
+    { preHandler:(req,rep)=>app.requireGroupAccess(req,rep) },
+    async request=>{
+      const grupoId=(request.params as {id:string}).id;
 
       return db
         .select()
@@ -32,48 +36,56 @@ export async function momentoRoutes(app: FastifyInstance) {
         .where(
           or(
             isNull(momentos.grupoId),
-            eq(momentos.grupoId, grupoId)
+            eq(momentos.grupoId,grupoId)
           )
         )
-        .orderBy(asc(momentos.ordemLiturgica), asc(momentos.nome));
+        .orderBy(
+          asc(momentos.ordemLiturgica),
+          asc(momentos.nome)
+        );
     }
   );
 
+  // Somente MASTER global ou ADMIN_PAROQUIA podem cadastrar momentos.
   app.post(
     '/grupos/:id/momentos',
     {
-      preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+      preHandler:(req,rep)=>
+        app.requireParishAdminForGroup(req,rep)
     },
-    async (request, reply) => {
-      const grupoId = (request.params as { id: string }).id;
-      const parsed = momentoSchema.safeParse(request.body);
+    async(request,reply)=>{
+      const grupoId=(request.params as {id:string}).id;
+      const parsed=momentoSchema.safeParse(request.body);
 
       if (!parsed.success) {
         return reply.code(400).send({
-          error: 'VALIDATION_ERROR',
-          message: 'Momento inválido.'
+          error:'VALIDATION_ERROR',
+          message:'Momento inválido.'
         });
       }
 
-      const atuais = await db
-        .select({ ordem: momentos.ordemLiturgica })
+      const atuais=await db
+        .select({
+          ordem:momentos.ordemLiturgica
+        })
         .from(momentos)
-        .where(eq(momentos.grupoId, grupoId));
+        .where(eq(momentos.grupoId,grupoId));
 
-      const ordem =
+      const ordem=
         parsed.data.ordemLiturgica ??
-        (atuais.length
-          ? Math.max(...atuais.map(x => x.ordem)) + 1
-          : 100);
+        (
+          atuais.length
+            ? Math.max(...atuais.map(x=>x.ordem))+1
+            : 100
+        );
 
-      const [momento] = await db
+      const [momento]=await db
         .insert(momentos)
         .values({
           grupoId,
-          nome: parsed.data.nome.trim(),
-          slug: slugify(parsed.data.nome),
-          ordemLiturgica: ordem
+          nome:parsed.data.nome.trim(),
+          slug:slugify(parsed.data.nome),
+          ordemLiturgica:ordem
         })
         .returning();
 
@@ -83,56 +95,65 @@ export async function momentoRoutes(app: FastifyInstance) {
 
   app.get(
     '/grupos/:id/musicas/:musicaId/momentos',
-    { preHandler: (req, rep) => app.requireGroupAccess(req, rep) },
-    async request => {
-      const { musicaId } = request.params as {
-        id: string;
-        musicaId: string;
-      };
+    { preHandler:(req,rep)=>app.requireGroupAccess(req,rep) },
+    async request=>{
+      const { musicaId }=
+        request.params as {
+          id:string;
+          musicaId:string;
+        };
 
       return db
         .select({
-          id: momentos.id,
-          nome: momentos.nome,
-          slug: momentos.slug,
-          ordemLiturgica: momentos.ordemLiturgica,
-          grupoId: momentos.grupoId
+          id:momentos.id,
+          nome:momentos.nome,
+          slug:momentos.slug,
+          ordemLiturgica:momentos.ordemLiturgica,
+          grupoId:momentos.grupoId
         })
         .from(musicaMomentos)
-        .innerJoin(momentos, eq(momentos.id, musicaMomentos.momentoId))
-        .where(eq(musicaMomentos.musicaId, musicaId))
-        .orderBy(asc(momentos.ordemLiturgica));
+        .innerJoin(
+          momentos,
+          eq(momentos.id,musicaMomentos.momentoId)
+        )
+        .where(
+          eq(musicaMomentos.musicaId,musicaId)
+        )
+        .orderBy(
+          asc(momentos.ordemLiturgica)
+        );
     }
   );
 
+  // Todos os integrantes podem definir os momentos da música que cadastram.
   app.put(
     '/grupos/:id/musicas/:musicaId/momentos',
-    {
-      preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
-    },
-    async (request, reply) => {
-      const { id: grupoId, musicaId } = request.params as {
-        id: string;
-        musicaId: string;
-      };
+    { preHandler:(req,rep)=>app.requireGroupAccess(req,rep) },
+    async(request,reply)=>{
+      const { id:grupoId,musicaId }=
+        request.params as {
+          id:string;
+          musicaId:string;
+        };
 
-      const parsed = vinculoSchema.safeParse(request.body);
+      const parsed=vinculoSchema.safeParse(request.body);
 
       if (!parsed.success) {
         return reply.code(400).send({
-          error: 'VALIDATION_ERROR',
-          message: 'Seleção inválida.'
+          error:'VALIDATION_ERROR',
+          message:'Seleção inválida.'
         });
       }
 
-      const [musica] = await db
-        .select({ id: musicas.id })
+      const [musica]=await db
+        .select({
+          id:musicas.id
+        })
         .from(musicas)
         .where(
           and(
-            eq(musicas.id, musicaId),
-            eq(musicas.grupoId, grupoId),
+            eq(musicas.id,musicaId),
+            eq(musicas.grupoId,grupoId),
             isNull(musicas.deletedAt)
           )
         )
@@ -140,49 +161,57 @@ export async function momentoRoutes(app: FastifyInstance) {
 
       if (!musica) {
         return reply.code(404).send({
-          error: 'NOT_FOUND',
-          message: 'Música não encontrada.'
+          error:'NOT_FOUND',
+          message:'Música não encontrada.'
         });
       }
 
-      const ids = [...new Set(parsed.data.momentoIds)];
+      const ids=[...new Set(parsed.data.momentoIds)];
 
       if (ids.length) {
-        const validos = await db
-          .select({ id: momentos.id })
+        const validos=await db
+          .select({
+            id:momentos.id
+          })
           .from(momentos)
           .where(
             and(
-              inArray(momentos.id, ids),
+              inArray(momentos.id,ids),
               or(
                 isNull(momentos.grupoId),
-                eq(momentos.grupoId, grupoId)
+                eq(momentos.grupoId,grupoId)
               )
             )
           );
 
-        if (validos.length !== ids.length) {
+        if (validos.length!==ids.length) {
           return reply.code(400).send({
-            error: 'INVALID_MOMENT',
-            message: 'Momento inválido.'
+            error:'INVALID_MOMENT',
+            message:'Momento inválido.'
           });
         }
       }
 
       await db
         .delete(musicaMomentos)
-        .where(eq(musicaMomentos.musicaId, musicaId));
+        .where(
+          eq(musicaMomentos.musicaId,musicaId)
+        );
 
       if (ids.length) {
-        await db.insert(musicaMomentos).values(
-          ids.map(momentoId => ({
-            musicaId,
-            momentoId
-          }))
-        );
+        await db
+          .insert(musicaMomentos)
+          .values(
+            ids.map(momentoId=>({
+              musicaId,
+              momentoId
+            }))
+          );
       }
 
-      return { ok: true };
+      return {
+        ok:true
+      };
     }
   );
 }

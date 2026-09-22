@@ -1,41 +1,65 @@
-import { useState, type FormEvent } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
-import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
+import {
+  useState,
+  type FormEvent
+} from 'react';
+
+import {
+  Navigate,
+  useParams
+} from 'react-router-dom';
+
+import GroupHeader, {
+  getGrupoAtivo
+} from '../components/GroupHeader';
+
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Convites() {
-  const { slug } = useParams();
-  const grupo = getGrupoAtivo();
+  const { slug }=useParams();
+  const grupo=getGrupoAtivo();
 
-  const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [papelProposto, setPapel] = useState('MUSICO');
-  const [link, setLink] = useState('');
-  const [erro, setErro] = useState('');
+  const {
+    user,
+    paroquiaAtiva
+  }=useAuth();
 
-  if (!grupo || grupo.slug !== slug) {
+  const [email,setEmail]=useState('');
+  const [telefone,setTelefone]=useState('');
+  const [papelProposto,setPapel]=useState('MUSICO');
+  const [link,setLink]=useState('');
+  const [erro,setErro]=useState('');
+
+  if (!grupo || grupo.slug!==slug) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const grupoId = grupo.id;
-  const pode = grupo.papel === 'RESPONSAVEL';
+  const grupoId=grupo.id;
 
-  async function submit(e: FormEvent) {
+  const pode=
+    user?.perfilGlobal==='MASTER' ||
+    paroquiaAtiva?.papel==='ADMIN_PAROQUIA' ||
+    grupo.papel==='RESPONSAVEL';
+
+  async function submit(e:FormEvent) {
     e.preventDefault();
     setErro('');
 
     try {
-      const data = await api(`/grupos/${grupoId}/convites`, {
-        method: 'POST',
-        body: JSON.stringify({
-          email: email || undefined,
-          telefone: telefone || undefined,
-          papelProposto
-        })
-      });
+      const data=await api(
+        `/grupos/${grupoId}/convites`,
+        {
+          method:'POST',
+          body:JSON.stringify({
+            email:email||undefined,
+            telefone:telefone||undefined,
+            papelProposto
+          })
+        }
+      );
 
       setLink(data.acceptUrl);
-    } catch (error) {
+    } catch(error) {
       setErro(
         error instanceof Error
           ? error.message
@@ -63,8 +87,7 @@ export default function Convites() {
             </h1>
 
             <p className="mt-4 cantus-muted leading-7">
-              Gere um convite para quem vai cantar, tocar ou coordenar
-              junto com o grupo.
+              O administrador da paróquia ou o responsável do ministério pode gerar convites.
             </p>
           </aside>
 
@@ -75,7 +98,7 @@ export default function Convites() {
               </div>
 
               <p className="mt-4 cantus-muted">
-                Apenas o responsável pelo grupo pode gerar convites.
+                Somente o administrador da paróquia ou o responsável do ministério pode gerar convites.
               </p>
             </div>
           ) : (
@@ -95,7 +118,7 @@ export default function Convites() {
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e=>setEmail(e.target.value)}
                   className="cantus-input mt-2"
                   placeholder="musico@email.com"
                 />
@@ -108,7 +131,7 @@ export default function Convites() {
 
                 <input
                   value={telefone}
-                  onChange={e => setTelefone(e.target.value)}
+                  onChange={e=>setTelefone(e.target.value)}
                   className="cantus-input mt-2"
                   placeholder="(00) 00000-0000"
                 />
@@ -116,17 +139,25 @@ export default function Convites() {
 
               <label className="block mt-4">
                 <span className="text-sm font-semibold text-[#d9d2c6]">
-                  Papel no grupo
+                  Papel no ministério
                 </span>
 
                 <select
                   value={papelProposto}
-                  onChange={e => setPapel(e.target.value)}
+                  onChange={e=>setPapel(e.target.value)}
                   className="cantus-input mt-2"
                 >
-                  <option value="MUSICO">Músico</option>
-                  <option value="COORDENADOR">Coordenador</option>
-                  <option value="RESPONSAVEL">Responsável</option>
+                  <option value="MUSICO">
+                    Músico
+                  </option>
+
+                  <option value="COORDENADOR">
+                    Coordenador
+                  </option>
+
+                  <option value="RESPONSAVEL">
+                    Responsável do Ministério
+                  </option>
                 </select>
               </label>
 
@@ -148,7 +179,7 @@ export default function Convites() {
 
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={()=>
                       navigator.clipboard.writeText(link)
                     }
                     className="cantus-secondary mt-4 px-4 py-2 text-sm"

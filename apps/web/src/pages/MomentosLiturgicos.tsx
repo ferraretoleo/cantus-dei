@@ -1,47 +1,76 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
-import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
+import {
+  useEffect,
+  useState,
+  type FormEvent
+} from 'react';
+
+import {
+  Navigate,
+  useParams
+} from 'react-router-dom';
+
+import GroupHeader, {
+  getGrupoAtivo
+} from '../components/GroupHeader';
+
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MomentosLiturgicos() {
-  const { slug } = useParams();
-  const grupo = getGrupoAtivo();
+  const { slug }=useParams();
+  const grupo=getGrupoAtivo();
+  const { user,paroquiaAtiva }=useAuth();
 
-  const [momentos, setMomentos] = useState<any[]>([]);
-  const [nome, setNome] = useState('');
-  const [erro, setErro] = useState('');
+  const [momentos,setMomentos]=useState<any[]>([]);
+  const [nome,setNome]=useState('');
+  const [erro,setErro]=useState('');
 
-  if (!grupo || grupo.slug !== slug) {
+  if (!grupo || grupo.slug!==slug) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const grupoId = grupo.id;
-  const pode = grupo.papel !== 'MUSICO';
+  const grupoId=grupo.id;
+
+  const podeCadastrarMomento=
+    user?.perfilGlobal==='MASTER' ||
+    paroquiaAtiva?.papel==='ADMIN_PAROQUIA';
 
   async function carregar() {
     try {
-      setMomentos(await api(`/grupos/${grupoId}/momentos`));
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro ao carregar momentos.');
+      setMomentos(
+        await api(`/grupos/${grupoId}/momentos`)
+      );
+    } catch(e) {
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Erro ao carregar momentos.'
+      );
     }
   }
 
-  useEffect(() => {
+  useEffect(()=>{
     carregar();
-  }, []);
+  },[]);
 
-  async function criar(e: FormEvent) {
+  async function criar(e:FormEvent) {
     e.preventDefault();
+    setErro('');
 
     try {
-      await api(`/grupos/${grupoId}/momentos`, {
-        method: 'POST',
-        body: JSON.stringify({ nome })
-      });
+      await api(
+        `/grupos/${grupoId}/momentos`,
+        {
+          method:'POST',
+          body:JSON.stringify({
+            nome
+          })
+        }
+      );
 
       setNome('');
       await carregar();
-    } catch (e) {
+    } catch(e) {
       setErro(
         e instanceof Error
           ? e.message
@@ -72,13 +101,13 @@ export default function MomentosLiturgicos() {
               Organize o repertório de acordo com cada parte da liturgia.
             </p>
 
-            {pode && (
+            {podeCadastrarMomento ? (
               <form
                 onSubmit={criar}
                 className="cantus-card mt-6 p-5"
               >
                 <div className="cantus-eyebrow">
-                  Personalizar
+                  Administração da paróquia
                 </div>
 
                 <label className="block mt-4">
@@ -89,7 +118,7 @@ export default function MomentosLiturgicos() {
                   <input
                     required
                     value={nome}
-                    onChange={e => setNome(e.target.value)}
+                    onChange={e=>setNome(e.target.value)}
                     placeholder="Ex.: Adoração"
                     className="cantus-input mt-2"
                   />
@@ -99,6 +128,16 @@ export default function MomentosLiturgicos() {
                   Adicionar momento
                 </button>
               </form>
+            ) : (
+              <div className="cantus-card mt-6 p-5">
+                <div className="cantus-eyebrow">
+                  Momentos disponíveis
+                </div>
+
+                <p className="mt-3 text-sm cantus-muted">
+                  O cadastro de novos momentos é exclusivo do administrador da paróquia.
+                </p>
+              </div>
             )}
           </aside>
 
@@ -110,7 +149,7 @@ export default function MomentosLiturgicos() {
             )}
 
             <div className="grid sm:grid-cols-2 gap-3">
-              {momentos.map(m => (
+              {momentos.map(m=>(
                 <article
                   key={m.id}
                   className="cantus-card p-5"
@@ -121,21 +160,19 @@ export default function MomentosLiturgicos() {
                     </div>
 
                     <div className="text-xs cantus-muted">
-                      {String(m.ordemLiturgica).padStart(2, '0')}
+                      Ordem {m.ordemLiturgica}
                     </div>
                   </div>
 
-                  <h2 className="cantus-display mt-5 text-2xl">
+                  <div className="cantus-display mt-5 text-2xl">
                     {m.nome}
-                  </h2>
+                  </div>
 
-                  {m.grupoId && (
-                    <div className="mt-3">
-                      <span className="cantus-badge">
-                        Personalizado
-                      </span>
-                    </div>
-                  )}
+                  <div className="mt-2 text-xs cantus-muted">
+                    {m.grupoId
+                      ? 'Personalizado deste ministério'
+                      : 'Momento padrão'}
+                  </div>
                 </article>
               ))}
             </div>

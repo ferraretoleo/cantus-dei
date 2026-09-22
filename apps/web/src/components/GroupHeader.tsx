@@ -7,17 +7,17 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 export type GrupoAtivo = {
-  id: string;
-  nome: string;
-  slug: string;
-  paroquia: string;
-  cidade: string;
-  papel: string;
-  corTema?: string;
+  id:string;
+  nome:string;
+  slug:string;
+  paroquia:string;
+  cidade:string;
+  papel:string;
+  corTema?:string;
 };
 
-export function getGrupoAtivo(): GrupoAtivo | null {
-  const raw =
+export function getGrupoAtivo():GrupoAtivo|null {
+  const raw=
     localStorage.getItem('cantus_grupo_ativo');
 
   if (!raw) return null;
@@ -30,28 +30,59 @@ export function getGrupoAtivo(): GrupoAtivo | null {
 }
 
 export default function GroupHeader() {
-  const { slug } = useParams();
-  const navigate = useNavigate();
+  const { slug }=useParams();
+  const navigate=useNavigate();
 
   const {
     user,
     paroquiaAtiva,
     logout
-  } = useAuth();
+  }=useAuth();
 
-  const grupo = getGrupoAtivo();
+  const grupo=getGrupoAtivo();
 
-  if (!grupo || grupo.slug !== slug) {
+  if (!grupo || grupo.slug!==slug) {
     return null;
   }
 
-  const podeAdministrarParoquia =
-    user?.perfilGlobal === 'MASTER' ||
-    paroquiaAtiva?.papel === 'ADMIN_PAROQUIA';
+  const grupoAtual = grupo;
+
+  const adminParoquiaOuMaster=
+    user?.perfilGlobal==='MASTER' ||
+    paroquiaAtiva?.papel==='ADMIN_PAROQUIA';
+
+  const responsavelMinisterio=
+    grupoAtual.papel==='RESPONSAVEL';
+
+  const administraMinisterio=
+    adminParoquiaOuMaster ||
+    responsavelMinisterio;
 
   function sair() {
     logout();
     navigate('/login');
+  }
+
+  function rotuloPapel() {
+    if (user?.perfilGlobal==='MASTER') {
+      return 'MASTER GLOBAL';
+    }
+
+    if (
+      paroquiaAtiva?.papel==='ADMIN_PAROQUIA'
+    ) {
+      return 'ADMIN PARÓQUIA';
+    }
+
+    if (grupoAtual.papel==='RESPONSAVEL') {
+      return 'RESP. MINISTÉRIO';
+    }
+
+    if (grupoAtual.papel==='COORDENADOR') {
+      return 'COORDENADOR';
+    }
+
+    return 'MÚSICO';
   }
 
   return (
@@ -67,7 +98,7 @@ export default function GroupHeader() {
             </Link>
 
             <div className="cantus-display mt-1 text-lg truncate">
-              {grupo.nome}
+              {grupoAtual.nome}
             </div>
           </div>
 
@@ -90,7 +121,7 @@ export default function GroupHeader() {
               className="cantus-nav-link"
               to={`/g/${slug}/calendario`}
             >
-              Calendário
+              Celebrações
             </Link>
 
             <Link
@@ -107,7 +138,7 @@ export default function GroupHeader() {
               Momentos
             </Link>
 
-            {podeAdministrarParoquia && (
+            {administraMinisterio && (
               <>
                 <Link
                   className="cantus-nav-link"
@@ -122,14 +153,16 @@ export default function GroupHeader() {
                 >
                   Convites
                 </Link>
-
-                <Link
-                  className="cantus-nav-link"
-                  to="/paroquia/admin"
-                >
-                  Admin. Paróquia
-                </Link>
               </>
+            )}
+
+            {adminParoquiaOuMaster && (
+              <Link
+                className="cantus-nav-link"
+                to="/paroquia/admin"
+              >
+                Admin. Paróquia
+              </Link>
             )}
           </nav>
 
@@ -140,11 +173,7 @@ export default function GroupHeader() {
               </div>
 
               <div className="mt-1 text-[10px] font-extrabold tracking-[.12em] uppercase cantus-gold">
-                {user?.perfilGlobal === 'MASTER'
-                  ? 'MASTER'
-                  : podeAdministrarParoquia
-                    ? 'ADMIN PARÓQUIA'
-                    : grupo.papel}
+                {rotuloPapel()}
               </div>
             </div>
 
@@ -183,7 +212,7 @@ export default function GroupHeader() {
             className="cantus-nav-link"
             to={`/g/${slug}/calendario`}
           >
-            Calendário
+            Celebrações
           </Link>
 
           <Link
@@ -200,7 +229,7 @@ export default function GroupHeader() {
             Momentos
           </Link>
 
-          {podeAdministrarParoquia && (
+          {administraMinisterio && (
             <>
               <Link
                 className="cantus-nav-link"
@@ -215,14 +244,16 @@ export default function GroupHeader() {
               >
                 Convites
               </Link>
-
-              <Link
-                className="cantus-nav-link"
-                to="/paroquia/admin"
-              >
-                Admin. Paróquia
-              </Link>
             </>
+          )}
+
+          {adminParoquiaOuMaster && (
+            <Link
+              className="cantus-nav-link"
+              to="/paroquia/admin"
+            >
+              Admin. Paróquia
+            </Link>
           )}
         </nav>
       </div>

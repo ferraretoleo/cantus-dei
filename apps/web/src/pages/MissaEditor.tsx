@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 type RepertorioItem = {
   momentoId: string;
@@ -16,6 +17,7 @@ export default function MissaEditor() {
   const navigate = useNavigate();
   const grupo = getGrupoAtivo();
   const nova = missaId === 'nova';
+  const { user, paroquiaAtiva } = useAuth();
 
   const [form, setForm] = useState({
     dataHora: '',
@@ -43,7 +45,14 @@ export default function MissaEditor() {
 
   const grupoAtual = grupo;
   const grupoId = grupoAtual.id;
-  const podeEditar = grupoAtual.papel !== 'MUSICO';
+  const podeEditar =
+    user?.perfilGlobal === 'MASTER' ||
+    paroquiaAtiva?.papel === 'ADMIN_PAROQUIA' ||
+    grupoAtual.papel === 'RESPONSAVEL';
+
+  const podeCriarMomento =
+    user?.perfilGlobal === 'MASTER' ||
+    paroquiaAtiva?.papel === 'ADMIN_PAROQUIA';
 
   async function carregarMomentos() {
     const lista = await api(`/grupos/${grupoId}/momentos`);
@@ -516,7 +525,7 @@ export default function MissaEditor() {
                     etapa especial da celebração.
                   </p>
 
-                  {podeEditar && (
+                  {podeCriarMomento && (
                     <form
                       onSubmit={cadastrarNovoMomento}
                       className="mt-5 flex flex-col sm:flex-row gap-3"

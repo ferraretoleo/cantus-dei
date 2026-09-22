@@ -93,7 +93,7 @@ export default fp(async app => {
       if (!membro) {
         return reply.code(403).send({
           error: 'FORBIDDEN',
-          message: 'Sem acesso a este grupo.'
+          message: 'Sem acesso a este ministério.'
         });
       }
 
@@ -108,6 +108,62 @@ export default fp(async app => {
         grupoId,
         papel: membro.papel
       };
+    }
+  );
+
+  app.decorate(
+    'requireParishAdminForGroup',
+    async function (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) {
+      await app.authenticate(request);
+
+      const params = request.params as Record<string, string>;
+      const grupoId = params.id || params.grupoId;
+
+      if (!grupoId) {
+        return reply.code(400).send({
+          error: 'BAD_REQUEST',
+          message: 'grupo_id ausente'
+        });
+      }
+
+      const [usuario] = await db
+        .select({
+          perfilGlobal: users.perfilGlobal
+        })
+        .from(users)
+        .where(eq(users.id, request.user.sub))
+        .limit(1);
+
+      if (usuario?.perfilGlobal === 'MASTER') {
+        return;
+      }
+
+      const [admin] = await db
+        .select({
+          userId: paroquiaMembros.userId
+        })
+        .from(grupos)
+        .innerJoin(
+          paroquiaMembros,
+          and(
+            eq(paroquiaMembros.paroquiaId, grupos.paroquiaId),
+            eq(paroquiaMembros.userId, request.user.sub),
+            eq(paroquiaMembros.ativo, true),
+            eq(paroquiaMembros.papel, 'ADMIN_PAROQUIA')
+          )
+        )
+        .where(eq(grupos.id, grupoId))
+        .limit(1);
+
+      if (!admin) {
+        return reply.code(403).send({
+          error: 'FORBIDDEN',
+          message: 'Somente o administrador da paróquia pode realizar esta ação.'
+        });
+      }
     }
   );
 });
@@ -125,6 +181,11 @@ declare module 'fastify' {
       request: FastifyRequest,
       reply: FastifyReply,
       allowed?: Papel[]
+    ): Promise<unknown>;
+
+    requireParishAdminForGroup(
+      request: FastifyRequest,
+      reply: FastifyReply
     ): Promise<unknown>;
   }
 }

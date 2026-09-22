@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
 import AbcScore from '../components/AbcScore';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const exemploAbc = `X:1
 T:Exemplo
@@ -29,6 +30,7 @@ const vazio = {
 export default function Musicas() {
   const { slug } = useParams();
   const grupo = getGrupoAtivo();
+  const { user, paroquiaAtiva } = useAuth();
 
   const [lista, setLista] = useState<any[]>([]);
   const [momentos, setMomentos] = useState<any[]>([]);
@@ -44,7 +46,13 @@ export default function Musicas() {
   }
 
   const grupoId = grupo.id;
-  const pode = grupo.papel !== 'MUSICO';
+  const podeCadastrar = true;
+
+  const podeGerenciar =
+    user?.perfilGlobal === 'MASTER' ||
+    paroquiaAtiva?.papel === 'ADMIN_PAROQUIA' ||
+    grupo.papel === 'RESPONSAVEL' ||
+    grupo.papel === 'COORDENADOR';
 
   async function carregar() {
     try {
@@ -205,7 +213,7 @@ export default function Musicas() {
             </p>
           </div>
 
-          {pode && (
+          {podeCadastrar && (
             <button
               onClick={() => {
                 setForm(vazio);
@@ -220,7 +228,7 @@ export default function Musicas() {
           )}
         </div>
 
-        {mostrar && pode && (
+        {mostrar && podeCadastrar && (
           <form
             onSubmit={salvar}
             className="cantus-card mt-7 p-6 sm:p-8"
@@ -521,7 +529,7 @@ export default function Musicas() {
                 </details>
               )}
 
-              {pode && (
+              {podeGerenciar && (
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => editar(m)}

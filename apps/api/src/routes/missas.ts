@@ -41,7 +41,7 @@ export async function missaRoutes(app: FastifyInstance) {
     '/grupos/:id/missas',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(req, rep, ['RESPONSAVEL'])
     },
     async (request, reply) => {
       const grupoId = (request.params as { id: string }).id;
@@ -143,7 +143,7 @@ export async function missaRoutes(app: FastifyInstance) {
     '/grupos/:id/missas/:missaId',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(req, rep, ['RESPONSAVEL'])
     },
     async (request, reply) => {
       const { id: grupoId, missaId } = request.params as {
@@ -214,7 +214,7 @@ export async function missaRoutes(app: FastifyInstance) {
     '/grupos/:id/missas/:missaId',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(req, rep, ['RESPONSAVEL'])
     },
     async request => {
       const { id: grupoId, missaId } = request.params as {
@@ -244,7 +244,7 @@ export async function missaRoutes(app: FastifyInstance) {
     '/grupos/:id/missas/:missaId/repertorio',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(req, rep, ['RESPONSAVEL'])
     },
     async (request, reply) => {
       const missaId = (request.params as { missaId: string }).missaId;
@@ -282,7 +282,7 @@ export async function missaRoutes(app: FastifyInstance) {
     '/grupos/:id/missas/:missaId/escala',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(req, rep, ['RESPONSAVEL'])
     },
     async (request, reply) => {
       const missaId = (request.params as { missaId: string }).missaId;
@@ -317,7 +317,7 @@ export async function missaRoutes(app: FastifyInstance) {
     '/grupos/:id/missas/:missaId/publicar',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(req, rep, ['RESPONSAVEL'])
     },
     async (request, reply) => {
       const { id: grupoId, missaId } = request.params as {

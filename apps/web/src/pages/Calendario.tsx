@@ -1,33 +1,49 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
-import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
-import { api } from '../lib/api';
+import {
+  Link,
+  Navigate,
+  useParams
+} from 'react-router-dom';
 
-function formatar(data: string) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(data));
+import GroupHeader, {
+  getGrupoAtivo
+} from '../components/GroupHeader';
+
+import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
+
+function formatar(data:string) {
+  return new Intl.DateTimeFormat(
+    'pt-BR',
+    {
+      dateStyle:'medium',
+      timeStyle:'short'
+    }
+  ).format(new Date(data));
 }
 
 export default function Calendario() {
-  const { slug } = useParams();
-  const grupo = getGrupoAtivo();
+  const { slug }=useParams();
+  const grupo=getGrupoAtivo();
+  const { user,paroquiaAtiva }=useAuth();
 
-  const [missas, setMissas] = useState<any[]>([]);
-  const [erro, setErro] = useState('');
+  const [missas,setMissas]=useState<any[]>([]);
+  const [erro,setErro]=useState('');
 
-  if (!grupo || grupo.slug !== slug) {
+  if (!grupo || grupo.slug!==slug) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const pode = grupo.papel !== 'MUSICO';
+  const podeCadastrarCelebracao=
+    user?.perfilGlobal==='MASTER' ||
+    paroquiaAtiva?.papel==='ADMIN_PAROQUIA' ||
+    grupo.papel==='RESPONSAVEL';
 
-  useEffect(() => {
+  useEffect(()=>{
     api(`/grupos/${grupo.id}/missas`)
       .then(setMissas)
-      .catch(e => setErro(e.message));
-  }, []);
+      .catch(e=>setErro(e.message));
+  },[]);
 
   return (
     <main className="cantus-page">
@@ -52,7 +68,7 @@ export default function Calendario() {
             </p>
           </div>
 
-          {pode && (
+          {podeCadastrarCelebracao && (
             <Link
               to={`/g/${slug}/missas/nova`}
               className="cantus-primary px-6 py-3 self-start"
@@ -69,7 +85,7 @@ export default function Calendario() {
         )}
 
         <div className="space-y-4 mt-7">
-          {missas.map(m => (
+          {missas.map(m=>(
             <Link
               key={m.id}
               to={`/g/${slug}/missas/${m.id}`}
@@ -99,7 +115,7 @@ export default function Calendario() {
                 <div className="flex items-center gap-3">
                   <span
                     className={
-                      m.status === 'PUBLICADA'
+                      m.status==='PUBLICADA'
                         ? 'cantus-badge'
                         : 'cantus-badge opacity-60'
                     }

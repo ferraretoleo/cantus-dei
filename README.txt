@@ -1,57 +1,37 @@
-CANTUS DEI - CONVITE COM CADASTRO DO MÚSICO
+CORREÇÃO TS18047 - GROUPHEADER
 
-NOVO FLUXO
+Erro corrigido:
+src/components/GroupHeader.tsx
+'grupo' is possibly 'null'
 
-MÚSICO NOVO
-1. Recebe o link do convite.
-2. Abre o convite.
-3. Vê ministério, paróquia e papel proposto.
-4. Informa:
-   - nome
-   - e-mail, se o convite foi criado apenas por telefone
-   - telefone
-   - senha
-   - confirmação da senha
-5. Clica "Criar acesso e aceitar convite".
-6. O sistema:
-   - cria o usuário
-   - associa à paróquia como MEMBRO
-   - associa ao grupo com o papel do convite
-   - marca o convite como ACEITO
-   - gera login automaticamente
-   - seleciona a paróquia
-   - leva para o Dashboard
-7. O ministério já aparece no Dashboard.
+Causa:
+O TypeScript não preservava a garantia de que grupo não era null
+dentro da função rotuloPapel().
 
-USUÁRIO JÁ CADASTRADO
-- não cria nova conta
-- não redefine senha
-- deve entrar com a conta existente
-- abre o convite e clica "Aceitar convite"
-- passa a pertencer à paróquia e ao grupo
+Correção:
+Após a validação:
 
-SEGURANÇA
-Se o convite tiver e-mail definido:
-- uma conta existente só pode aceitar se estiver logada com o mesmo e-mail
-- usuário novo é criado usando exatamente o e-mail do convite
-- não é possível trocar o e-mail do convite na tela
+if (!grupo || grupo.slug !== slug) {
+  return null;
+}
 
-ARQUIVOS ALTERADOS
-- apps/api/src/routes/invites.ts
-- apps/web/src/pages/AceitarConvite.tsx
+foi criada a referência:
 
-BANCO
-Não precisa executar SQL.
+const grupoAtual = grupo;
 
-APLICAÇÃO
+O componente passa a utilizar grupoAtual.
+
+COMO APLICAR
 
 Extraia por cima de:
 D:\GitHub\cantus-dei
 
-Execute:
+Depois execute:
 npm run build
 
 Se passar:
 git add .
-git commit -m "Permite cadastro do musico ao aceitar convite"
+git commit -m "Corrige tipagem do GroupHeader"
 git push origin main
+
+Não precisa executar SQL.

@@ -19,19 +19,19 @@ export async function musicRoutes(app: FastifyInstance) {
           and(
             eq(musicas.grupoId, grupoId),
             isNull(musicas.deletedAt),
-            q?.trim() ? ilike(musicas.titulo, `%${q.trim()}%`) : undefined
+            q?.trim()
+              ? ilike(musicas.titulo, `%${q.trim()}%`)
+              : undefined
           )
         )
         .orderBy(musicas.titulo);
     }
   );
 
+  // Todos os integrantes ativos do ministério podem cadastrar músicas.
   app.post(
     '/grupos/:id/musicas',
-    {
-      preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
-    },
+    { preHandler: (req, rep) => app.requireGroupAccess(req, rep) },
     async (request, reply) => {
       const grupoId = (request.params as { id: string }).id;
       const parsed = musicaSchema.safeParse(request.body);
@@ -56,19 +56,26 @@ export async function musicRoutes(app: FastifyInstance) {
     }
   );
 
+  // Edição continua sob responsabilidade da coordenação/responsável.
   app.put(
     '/grupos/:id/musicas/:musicaId',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(
+          req,
+          rep,
+          ['RESPONSAVEL', 'COORDENADOR']
+        )
     },
     async (request, reply) => {
-      const { id: grupoId, musicaId } = request.params as {
-        id: string;
-        musicaId: string;
-      };
+      const { id: grupoId, musicaId } =
+        request.params as {
+          id: string;
+          musicaId: string;
+        };
 
-      const parsed = musicaSchema.partial().safeParse(request.body);
+      const parsed =
+        musicaSchema.partial().safeParse(request.body);
 
       if (!parsed.success) {
         return reply.code(400).send({
@@ -82,7 +89,10 @@ export async function musicRoutes(app: FastifyInstance) {
         .set({
           ...parsed.data,
           ...(parsed.data.videoUrl !== undefined
-            ? { videoUrl: parsed.data.videoUrl || null }
+            ? {
+                videoUrl:
+                  parsed.data.videoUrl || null
+              }
             : {}),
           updatedAt: new Date()
         })
@@ -110,13 +120,18 @@ export async function musicRoutes(app: FastifyInstance) {
     '/grupos/:id/musicas/:musicaId',
     {
       preHandler: (req, rep) =>
-        app.requireGroupAccess(req, rep, ['RESPONSAVEL', 'COORDENADOR'])
+        app.requireGroupAccess(
+          req,
+          rep,
+          ['RESPONSAVEL', 'COORDENADOR']
+        )
     },
     async (request, reply) => {
-      const { id: grupoId, musicaId } = request.params as {
-        id: string;
-        musicaId: string;
-      };
+      const { id: grupoId, musicaId } =
+        request.params as {
+          id: string;
+          musicaId: string;
+        };
 
       const [musica] = await db
         .update(musicas)
@@ -131,7 +146,9 @@ export async function musicRoutes(app: FastifyInstance) {
             isNull(musicas.deletedAt)
           )
         )
-        .returning({ id: musicas.id });
+        .returning({
+          id: musicas.id
+        });
 
       if (!musica) {
         return reply.code(404).send({
@@ -140,7 +157,9 @@ export async function musicRoutes(app: FastifyInstance) {
         });
       }
 
-      return { ok: true };
+      return {
+        ok: true
+      };
     }
   );
 }
