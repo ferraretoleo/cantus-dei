@@ -8,6 +8,7 @@ type Membro = {
   nome:string;
   email:string;
   telefone?:string|null;
+  dataNascimento?:string|null;
   perfilGlobal?:'USUARIO'|'MASTER';
   papel:'ADMIN_PAROQUIA'|'MEMBRO';
   ativo:boolean;
@@ -49,6 +50,7 @@ export default function ParoquiaAdmin() {
     nome:'',
     email:'',
     telefone:'',
+    dataNascimento:'',
     senha:''
   });
   const [salvandoEdicao,setSalvandoEdicao]=useState(false);
@@ -57,6 +59,7 @@ export default function ParoquiaAdmin() {
     nome:'',
     email:'',
     telefone:'',
+    dataNascimento:'',
     senha:'',
     papel:'MEMBRO' as 'MEMBRO'|'ADMIN_PAROQUIA'
   });
@@ -145,6 +148,7 @@ export default function ParoquiaAdmin() {
             nome:novo.nome,
             email:novo.email,
             telefone:novo.telefone||null,
+            dataNascimento:novo.dataNascimento||null,
             senha:novo.senha||undefined,
             papel:novo.papel
           })
@@ -161,6 +165,7 @@ export default function ParoquiaAdmin() {
         nome:'',
         email:'',
         telefone:'',
+        dataNascimento:'',
         senha:'',
         papel:'MEMBRO'
       });
@@ -181,6 +186,7 @@ export default function ParoquiaAdmin() {
       nome:membro.nome,
       email:membro.email,
       telefone:membro.telefone || '',
+      dataNascimento:membro.dataNascimento || '',
       senha:''
     });
     setErro('');
@@ -204,6 +210,7 @@ export default function ParoquiaAdmin() {
             nome:edicao.nome,
             email:edicao.email,
             telefone:edicao.telefone || null,
+            dataNascimento:edicao.dataNascimento || null,
             senha:edicao.senha || undefined
           })
         }
@@ -211,7 +218,7 @@ export default function ParoquiaAdmin() {
 
       setMensagem(`Dados de ${edicao.nome} atualizados.`);
       setEditando(null);
-      setEdicao({ nome:'',email:'',telefone:'',senha:'' });
+      setEdicao({ nome:'',email:'',telefone:'',dataNascimento:'',senha:'' });
       await carregarBase();
     } catch (e) {
       setErro(
@@ -436,6 +443,12 @@ export default function ParoquiaAdmin() {
                 onChange={e=>setNovo({ ...novo,telefone:e.target.value })}
                 className="cantus-input mt-2"
               />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Data de aniversário</span>
+              <input type="date" value={novo.dataNascimento} onChange={e=>setNovo({...novo,dataNascimento:e.target.value})} className="cantus-input mt-2" />
+              <div className="mt-2 text-xs cantus-muted">Usada no card de aniversariantes da semana.</div>
             </label>
 
             <label className="block mt-4">
@@ -745,6 +758,11 @@ export default function ParoquiaAdmin() {
                 onChange={e=>setEdicao({ ...edicao,telefone:e.target.value })}
                 className="cantus-input mt-2"
               />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Data de aniversário</span>
+              <input type="date" value={edicao.dataNascimento} onChange={e=>setEdicao({...edicao,dataNascimento:e.target.value})} className="cantus-input mt-2" />
             </label>
 
             <label className="block mt-4">

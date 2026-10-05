@@ -31,6 +31,14 @@ type AgendaItem = {
   instrumentoVoz:string|null;
 };
 
+type Aniversariante = {
+  userId:string;
+  nome:string;
+  telefone:string|null;
+  dataNascimento:string;
+  aniversario:string;
+};
+
 function chaveMes(data:Date) {
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,'0')}`;
 }
@@ -53,6 +61,7 @@ export default function Dashboard() {
 
   const [grupos,setGrupos]=useState<Grupo[]>([]);
   const [agenda,setAgenda]=useState<AgendaItem[]>([]);
+  const [aniversariantes,setAniversariantes]=useState<Aniversariante[]>([]);
   const [mes,setMes]=useState(()=>{
     const d=new Date();
     return new Date(d.getFullYear(),d.getMonth(),1);
@@ -87,6 +96,14 @@ export default function Dashboard() {
     }
   }
 
+  async function carregarAniversariantes() {
+    try {
+      setAniversariantes(await api(`/me/aniversariantes?paroquiaId=${encodeURIComponent(paroquiaAtual.id)}`));
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao carregar aniversariantes.');
+    }
+  }
+
   async function carregarAgenda(data:Date) {
     try {
       setAgenda(
@@ -105,6 +122,7 @@ export default function Dashboard() {
 
   useEffect(()=>{
     carregarGrupos();
+    carregarAniversariantes();
   },[paroquiaAtual.id]);
 
   useEffect(()=>{
@@ -231,6 +249,39 @@ export default function Dashboard() {
             {erro}
           </div>
         )}
+
+        <section className="cantus-card mt-7 p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="cantus-eyebrow">Comunidade</div>
+              <h2 className="cantus-display mt-2 text-3xl">Aniversariantes da semana</h2>
+              <p className="mt-2 text-sm cantus-muted">Somente membros vinculados a {paroquiaAtual.nome}.</p>
+            </div>
+            <div className="text-3xl">🎂</div>
+          </div>
+
+          {aniversariantes.length ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">
+              {aniversariantes.map(a=>{
+                const aniversario=new Date(a.aniversario);
+                const ano=Number(a.dataNascimento.slice(0,4));
+                const idade=aniversario.getFullYear()-ano;
+                return (
+                  <div key={a.userId} className="rounded-2xl border border-[#d5ae62]/20 bg-[#d5ae62]/[.055] p-4">
+                    <div className="cantus-gold text-xs font-bold uppercase tracking-[.12em]">
+                      {new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}).format(aniversario)}
+                    </div>
+                    <div className="cantus-display mt-2 text-2xl">{a.nome}</div>
+                    <div className="mt-1 text-sm cantus-muted">{idade} anos</div>
+                    {a.telefone && <a href={`tel:${a.telefone}`} className="inline-block mt-3 text-sm cantus-gold">☎ {a.telefone}</a>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.02] p-5 cantus-muted">Nenhum aniversariante nesta semana.</div>
+          )}
+        </section>
 
         <div className="grid lg:grid-cols-[1.35fr_.65fr] gap-5 mt-7">
           <section className="cantus-card p-5 sm:p-6">

@@ -13,6 +13,7 @@ type Usuario = {
   nome:string;
   email:string;
   telefone?:string|null;
+  dataNascimento?:string|null;
   perfilGlobal:'USUARIO'|'MASTER';
   ativo:boolean;
 };
@@ -103,6 +104,7 @@ export default function MasterAdmin() {
     nome:'',
     email:'',
     telefone:'',
+    dataNascimento:'',
     senha:''
   });
   const [salvandoUsuario,setSalvandoUsuario]=useState(false);
@@ -459,6 +461,7 @@ export default function MasterAdmin() {
       nome:usuario.nome,
       email:usuario.email,
       telefone:usuario.telefone || '',
+      dataNascimento:usuario.dataNascimento || '',
       senha:''
     });
     setErro('');
@@ -482,6 +485,7 @@ export default function MasterAdmin() {
             nome:edicaoUsuario.nome,
             email:edicaoUsuario.email,
             telefone:edicaoUsuario.telefone || null,
+            dataNascimento:edicaoUsuario.dataNascimento || null,
             senha:edicaoUsuario.senha || undefined
           })
         }
@@ -489,7 +493,7 @@ export default function MasterAdmin() {
 
       setMensagem(`Dados de ${edicaoUsuario.nome} atualizados.`);
       setEditandoUsuario(null);
-      setEdicaoUsuario({ nome:'',email:'',telefone:'',senha:'' });
+      setEdicaoUsuario({ nome:'',email:'',telefone:'',dataNascimento:'',senha:'' });
       await carregarBase();
     } catch (error) {
       setErro(
@@ -1290,6 +1294,11 @@ export default function MasterAdmin() {
                 onChange={e=>setEdicaoUsuario({ ...edicaoUsuario,telefone:e.target.value })}
                 className="cantus-input mt-2"
               />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Data de aniversário</span>
+              <input type="date" value={edicaoUsuario.dataNascimento} onChange={e=>setEdicaoUsuario({...edicaoUsuario,dataNascimento:e.target.value})} className="cantus-input mt-2" />
             </label>
 
             <label className="block mt-4">

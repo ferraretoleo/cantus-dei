@@ -16,6 +16,7 @@ const novoUsuarioSchema = z.object({
   nome: z.string().min(2).max(120),
   email: z.string().email().max(255),
   telefone: z.string().max(30).optional().nullable(),
+  dataNascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   senha: z.string().min(8).max(128).optional(),
   papel: z.enum(['ADMIN_PAROQUIA', 'MEMBRO']).default('MEMBRO')
 });
@@ -31,6 +32,7 @@ const usuarioUpdateSchema = z.object({
   nome: z.string().min(2).max(120),
   email: z.string().email().max(255),
   telefone: z.string().max(30).optional().nullable(),
+  dataNascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   senha: z.string().min(8).max(128).optional()
 });
 
@@ -157,6 +159,7 @@ export async function paroquiaRoutes(app: FastifyInstance) {
           nome: users.nome,
           email: users.email,
           telefone: users.telefone,
+          dataNascimento: users.dataNascimento,
           perfilGlobal: users.perfilGlobal,
           papel: paroquiaMembros.papel,
           ativo: paroquiaMembros.ativo
@@ -225,6 +228,7 @@ export async function paroquiaRoutes(app: FastifyInstance) {
             nome: parsed.data.nome,
             email,
             telefone: parsed.data.telefone || null,
+            dataNascimento: parsed.data.dataNascimento || null,
             senhaHash,
             perfilGlobal: 'USUARIO'
           })
@@ -345,12 +349,14 @@ export async function paroquiaRoutes(app: FastifyInstance) {
         nome: string;
         email: string;
         telefone: string | null;
+        dataNascimento: string | null;
         updatedAt: Date;
         senhaHash?: string;
       } = {
         nome: parsed.data.nome.trim(),
         email,
         telefone: parsed.data.telefone?.trim() || null,
+        dataNascimento: parsed.data.dataNascimento || null,
         updatedAt: new Date()
       };
 

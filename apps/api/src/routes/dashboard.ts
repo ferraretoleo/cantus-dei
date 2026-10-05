@@ -155,4 +155,42 @@ export async function dashboardRoutes(app: FastifyInstance) {
       )
       .orderBy(asc(missas.dataHora));
   });
+  app.get('/me/aniversariantes', { preHandler: app.authenticate }, async (request, reply) => {
+    const { paroquiaId } = request.query as { paroquiaId?: string };
+    if (!paroquiaId) return [];
+
+    const [usuario] = await db.select({ perfilGlobal: users.perfilGlobal })
+      .from(users).where(eq(users.id, request.user.sub)).limit(1);
+
+    if (usuario?.perfilGlobal !== 'MASTER') {
+      const [vinculo] = await db.select({ userId: paroquiaMembros.userId })
+        .from(paroquiaMembros)
+        .where(and(eq(paroquiaMembros.paroquiaId, paroquiaId), eq(paroquiaMembros.userId, request.user.sub), eq(paroquiaMembros.ativo, true)))
+        .limit(1);
+      if (!vinculo) return reply.code(403).send({ error:'FORBIDDEN', message:'Você não possui acesso a esta paróquia.' });
+    }
+
+    const membros = await db.select({ userId:users.id, nome:users.nome, telefone:users.telefone, dataNascimento:users.dataNascimento })
+      .from(paroquiaMembros)
+      .innerJoin(users, eq(users.id, paroquiaMembros.userId))
+      .where(and(eq(paroquiaMembros.paroquiaId, paroquiaId), eq(paroquiaMembros.ativo, true), eq(users.ativo, true)))
+      .orderBy(asc(users.nome));
+
+    const hoje=new Date();
+    const delta=hoje.getDay()===0 ? -6 : 1-hoje.getDay();
+    const inicio=new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()+delta); inicio.setHours(0,0,0,0);
+    const fim=new Date(inicio); fim.setDate(fim.getDate()+6); fim.setHours(23,59,59,999);
+
+    function aniversario(valor:string) {
+      const [,mes,dia]=valor.split('-').map(Number);
+      return [new Date(inicio.getFullYear(),mes-1,dia), new Date(fim.getFullYear(),mes-1,dia)].find(d=>d>=inicio && d<=fim);
+    }
+
+    return membros.filter(m=>!!m.dataNascimento)
+      .map(m=>({...m, aniversario:aniversario(m.dataNascimento!)}))
+      .filter(m=>!!m.aniversario)
+      .sort((a,b)=>a.aniversario!.getTime()-b.aniversario!.getTime())
+      .map(m=>({ userId:m.userId, nome:m.nome, telefone:m.telefone, dataNascimento:m.dataNascimento, aniversario:m.aniversario!.toISOString() }));
+  });
+
 }

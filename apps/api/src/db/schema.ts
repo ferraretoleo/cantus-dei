@@ -1,5 +1,5 @@
 import {
-  boolean, index, integer, pgEnum, pgTable, primaryKey, text, timestamp,
+  boolean, date, index, integer, pgEnum, pgTable, primaryKey, text, timestamp,
   unique, uuid, varchar
 } from 'drizzle-orm/pg-core';
 
@@ -21,6 +21,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   senhaHash: text('senha_hash').notNull(),
   telefone: varchar('telefone', { length: 30 }),
+  dataNascimento: date('data_nascimento'),
   perfilGlobal: perfilGlobalEnum('perfil_global').default('USUARIO').notNull(),
   ativo: boolean('ativo').default(true).notNull(),
   ...timestamps

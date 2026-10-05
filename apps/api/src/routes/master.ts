@@ -27,6 +27,7 @@ const usuarioUpdateSchema = z.object({
   nome: z.string().min(2).max(120),
   email: z.string().email().max(255),
   telefone: z.string().max(30).optional().nullable(),
+  dataNascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   senha: z.string().min(8).max(128).optional()
 });
 
@@ -64,6 +65,7 @@ export async function masterRoutes(app: FastifyInstance) {
           nome: users.nome,
           email: users.email,
           telefone: users.telefone,
+          dataNascimento: users.dataNascimento,
           perfilGlobal: users.perfilGlobal,
           ativo: users.ativo,
           createdAt: users.createdAt
