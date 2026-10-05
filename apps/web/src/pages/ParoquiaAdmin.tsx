@@ -8,6 +8,7 @@ type Membro = {
   nome:string;
   email:string;
   telefone?:string|null;
+  perfilGlobal?:'USUARIO'|'MASTER';
   papel:'ADMIN_PAROQUIA'|'MEMBRO';
   ativo:boolean;
 };
@@ -42,6 +43,15 @@ export default function ParoquiaAdmin() {
   const [voz,setVoz]=useState('');
   const [erro,setErro]=useState('');
   const [mensagem,setMensagem]=useState('');
+
+  const [editando,setEditando]=useState<Membro|null>(null);
+  const [edicao,setEdicao]=useState({
+    nome:'',
+    email:'',
+    telefone:'',
+    senha:''
+  });
+  const [salvandoEdicao,setSalvandoEdicao]=useState(false);
 
   const [novo,setNovo]=useState({
     nome:'',
@@ -162,6 +172,55 @@ export default function ParoquiaAdmin() {
           ? e.message
           : 'Erro ao cadastrar usuário.'
       );
+    }
+  }
+
+  function abrirEdicao(membro:Membro) {
+    setEditando(membro);
+    setEdicao({
+      nome:membro.nome,
+      email:membro.email,
+      telefone:membro.telefone || '',
+      senha:''
+    });
+    setErro('');
+    setMensagem('');
+  }
+
+  async function salvarEdicaoUsuario(e:FormEvent) {
+    e.preventDefault();
+    if (!editando) return;
+
+    setSalvandoEdicao(true);
+    setErro('');
+    setMensagem('');
+
+    try {
+      await api(
+        `/paroquias/${paroquiaAtual.id}/usuarios/${editando.userId}`,
+        {
+          method:'PUT',
+          body:JSON.stringify({
+            nome:edicao.nome,
+            email:edicao.email,
+            telefone:edicao.telefone || null,
+            senha:edicao.senha || undefined
+          })
+        }
+      );
+
+      setMensagem(`Dados de ${edicao.nome} atualizados.`);
+      setEditando(null);
+      setEdicao({ nome:'',email:'',telefone:'',senha:'' });
+      await carregarBase();
+    } catch (e) {
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Erro ao atualizar usuário.'
+      );
+    } finally {
+      setSalvandoEdicao(false);
     }
   }
 
@@ -446,10 +505,29 @@ export default function ParoquiaAdmin() {
                     {m.email}
                   </div>
 
-                  <div className="mt-3">
-                    <span className="cantus-badge">
-                      {m.papel}
-                    </span>
+                  <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="cantus-badge">
+                        {m.papel}
+                      </span>
+
+                      {m.perfilGlobal==='MASTER' && (
+                        <span className="cantus-badge">
+                          MASTER GLOBAL
+                        </span>
+                      )}
+                    </div>
+
+                    {(user?.perfilGlobal==='MASTER' ||
+                      m.perfilGlobal!=='MASTER') && (
+                      <button
+                        type="button"
+                        onClick={()=>abrirEdicao(m)}
+                        className="cantus-secondary px-3 py-2 text-xs"
+                      >
+                        Editar dados
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -609,6 +687,90 @@ export default function ParoquiaAdmin() {
           </div>
         </section>
       </section>
+
+      {editando && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm p-4 grid place-items-center">
+          <form
+            onSubmit={salvarEdicaoUsuario}
+            className="cantus-card w-full max-w-xl p-6 sm:p-8 max-h-[90vh] overflow-auto"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="cantus-eyebrow">
+                  Editar usuário
+                </div>
+                <h2 className="cantus-display mt-2 text-3xl">
+                  Dados de acesso
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={()=>setEditando(null)}
+                className="cantus-secondary px-3 py-2 text-sm"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <p className="mt-3 text-sm cantus-muted">
+              Você pode corrigir nome, e-mail, telefone e, quando necessário, redefinir a senha.
+            </p>
+
+            <label className="block mt-6">
+              <span className="text-sm font-semibold">Nome</span>
+              <input
+                required
+                value={edicao.nome}
+                onChange={e=>setEdicao({ ...edicao,nome:e.target.value })}
+                className="cantus-input mt-2"
+              />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">E-mail</span>
+              <input
+                required
+                type="email"
+                value={edicao.email}
+                onChange={e=>setEdicao({ ...edicao,email:e.target.value })}
+                className="cantus-input mt-2"
+              />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Telefone</span>
+              <input
+                value={edicao.telefone}
+                onChange={e=>setEdicao({ ...edicao,telefone:e.target.value })}
+                className="cantus-input mt-2"
+              />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Nova senha</span>
+              <input
+                type="password"
+                minLength={8}
+                value={edicao.senha}
+                onChange={e=>setEdicao({ ...edicao,senha:e.target.value })}
+                className="cantus-input mt-2"
+                placeholder="Deixe vazio para manter a senha atual"
+              />
+              <div className="mt-2 text-xs cantus-muted">
+                Mínimo de 8 caracteres quando preenchida.
+              </div>
+            </label>
+
+            <button
+              disabled={salvandoEdicao}
+              className="cantus-primary mt-6 w-full px-6 py-3 disabled:opacity-50"
+            >
+              {salvandoEdicao ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </form>
+        </div>
+      )}
     </main>
   );
 }

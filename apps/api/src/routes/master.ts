@@ -4,6 +4,7 @@ import type {
   FastifyRequest
 } from 'fastify';
 import { and, asc, eq } from 'drizzle-orm';
+import argon2 from 'argon2';
 import {
   associarParoquiaSchema,
   createParoquiaSchema
@@ -20,6 +21,13 @@ import {
 
 const perfilSchema = z.object({
   perfilGlobal: z.enum(['USUARIO', 'MASTER'])
+});
+
+const usuarioUpdateSchema = z.object({
+  nome: z.string().min(2).max(120),
+  email: z.string().email().max(255),
+  telefone: z.string().max(30).optional().nullable(),
+  senha: z.string().min(8).max(128).optional()
 });
 
 async function requireMaster(

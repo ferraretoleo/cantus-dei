@@ -27,6 +27,13 @@ const membroGrupoSchema = z.object({
   voz: z.string().max(30).optional().nullable()
 });
 
+const usuarioUpdateSchema = z.object({
+  nome: z.string().min(2).max(120),
+  email: z.string().email().max(255),
+  telefone: z.string().max(30).optional().nullable(),
+  senha: z.string().min(8).max(128).optional()
+});
+
 async function podeAdministrarParoquia(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -150,6 +157,7 @@ export async function paroquiaRoutes(app: FastifyInstance) {
           nome: users.nome,
           email: users.email,
           telefone: users.telefone,
+          perfilGlobal: users.perfilGlobal,
           papel: paroquiaMembros.papel,
           ativo: paroquiaMembros.ativo
         })
@@ -254,6 +262,115 @@ export async function paroquiaRoutes(app: FastifyInstance) {
         criado,
         papel: parsed.data.papel
       });
+    }
+  );
+
+  app.put(
+    '/paroquias/:id/usuarios/:userId',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const { id: paroquiaId, userId } = request.params as {
+        id: string;
+        userId: string;
+      };
+
+      if (!(await podeAdministrarParoquia(request, reply, paroquiaId))) {
+        return;
+      }
+
+      const parsed = usuarioUpdateSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error: 'VALIDATION_ERROR',
+          message: 'Dados do usuário inválidos.'
+        });
+      }
+
+      const [solicitante] = await db
+        .select({ perfilGlobal: users.perfilGlobal })
+        .from(users)
+        .where(eq(users.id, request.user.sub))
+        .limit(1);
+
+      const [vinculo] = await db
+        .select({
+          userId: paroquiaMembros.userId,
+          perfilGlobal: users.perfilGlobal
+        })
+        .from(paroquiaMembros)
+        .innerJoin(users, eq(users.id, paroquiaMembros.userId))
+        .where(
+          and(
+            eq(paroquiaMembros.paroquiaId, paroquiaId),
+            eq(paroquiaMembros.userId, userId),
+            eq(paroquiaMembros.ativo, true)
+          )
+        )
+        .limit(1);
+
+      if (!vinculo) {
+        return reply.code(404).send({
+          error: 'NOT_FOUND',
+          message: 'Usuário não está vinculado a esta paróquia.'
+        });
+      }
+
+      if (
+        vinculo.perfilGlobal === 'MASTER' &&
+        solicitante?.perfilGlobal !== 'MASTER'
+      ) {
+        return reply.code(403).send({
+          error: 'FORBIDDEN',
+          message: 'Administrador local não pode alterar um usuário MASTER.'
+        });
+      }
+
+      const email = parsed.data.email.trim().toLowerCase();
+
+      const [emailExistente] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (emailExistente && emailExistente.id !== userId) {
+        return reply.code(409).send({
+          error: 'EMAIL_IN_USE',
+          message: 'Este e-mail já está cadastrado para outro usuário.'
+        });
+      }
+
+      const alteracoes: {
+        nome: string;
+        email: string;
+        telefone: string | null;
+        updatedAt: Date;
+        senhaHash?: string;
+      } = {
+        nome: parsed.data.nome.trim(),
+        email,
+        telefone: parsed.data.telefone?.trim() || null,
+        updatedAt: new Date()
+      };
+
+      if (parsed.data.senha) {
+        alteracoes.senhaHash = await argon2.hash(parsed.data.senha);
+      }
+
+      const [usuario] = await db
+        .update(users)
+        .set(alteracoes)
+        .where(eq(users.id, userId))
+        .returning({
+          id: users.id,
+          nome: users.nome,
+          email: users.email,
+          telefone: users.telefone,
+          perfilGlobal: users.perfilGlobal
+        });
+
+      return usuario;
     }
   );
 

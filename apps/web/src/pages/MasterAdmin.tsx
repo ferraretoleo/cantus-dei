@@ -98,6 +98,15 @@ export default function MasterAdmin() {
   const [erro,setErro]=useState('');
   const [mensagem,setMensagem]=useState('');
 
+  const [editandoUsuario,setEditandoUsuario]=useState<Usuario|null>(null);
+  const [edicaoUsuario,setEdicaoUsuario]=useState({
+    nome:'',
+    email:'',
+    telefone:'',
+    senha:''
+  });
+  const [salvandoUsuario,setSalvandoUsuario]=useState(false);
+
   const [logoNova,setLogoNova]=useState('');
   const [logoSelecionada,setLogoSelecionada]=useState('');
   const [salvandoLogo,setSalvandoLogo]=useState(false);
@@ -442,6 +451,55 @@ export default function MasterAdmin() {
     await carregarMembros(
       paroquiaSelecionada
     );
+  }
+
+  function abrirEdicaoUsuario(usuario:Usuario) {
+    setEditandoUsuario(usuario);
+    setEdicaoUsuario({
+      nome:usuario.nome,
+      email:usuario.email,
+      telefone:usuario.telefone || '',
+      senha:''
+    });
+    setErro('');
+    setMensagem('');
+  }
+
+  async function salvarUsuario(e:FormEvent) {
+    e.preventDefault();
+    if (!editandoUsuario) return;
+
+    setSalvandoUsuario(true);
+    setErro('');
+    setMensagem('');
+
+    try {
+      await api(
+        `/master/usuarios/${editandoUsuario.id}`,
+        {
+          method:'PUT',
+          body:JSON.stringify({
+            nome:edicaoUsuario.nome,
+            email:edicaoUsuario.email,
+            telefone:edicaoUsuario.telefone || null,
+            senha:edicaoUsuario.senha || undefined
+          })
+        }
+      );
+
+      setMensagem(`Dados de ${edicaoUsuario.nome} atualizados.`);
+      setEditandoUsuario(null);
+      setEdicaoUsuario({ nome:'',email:'',telefone:'',senha:'' });
+      await carregarBase();
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao atualizar usuário.'
+      );
+    } finally {
+      setSalvandoUsuario(false);
+    }
   }
 
   async function alterarPerfilGlobal(
@@ -1123,6 +1181,14 @@ export default function MasterAdmin() {
 
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={()=>abrirEdicaoUsuario(u)}
+                          className="cantus-secondary px-3 py-2 text-xs"
+                        >
+                          Editar dados
+                        </button>
+
                         {u.id!==user?.id && (
                           <>
                             <button
@@ -1166,6 +1232,90 @@ export default function MasterAdmin() {
           </div>
         </section>
       </section>
+
+      {editandoUsuario && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm p-4 grid place-items-center">
+          <form
+            onSubmit={salvarUsuario}
+            className="cantus-card w-full max-w-xl p-6 sm:p-8 max-h-[90vh] overflow-auto"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="cantus-eyebrow">
+                  Administração global
+                </div>
+                <h2 className="cantus-display mt-2 text-3xl">
+                  Editar usuário
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={()=>setEditandoUsuario(null)}
+                className="cantus-secondary px-3 py-2 text-sm"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <p className="mt-3 text-sm cantus-muted">
+              O MASTER GLOBAL pode corrigir nome, e-mail, telefone e redefinir a senha de qualquer usuário.
+            </p>
+
+            <label className="block mt-6">
+              <span className="text-sm font-semibold">Nome</span>
+              <input
+                required
+                value={edicaoUsuario.nome}
+                onChange={e=>setEdicaoUsuario({ ...edicaoUsuario,nome:e.target.value })}
+                className="cantus-input mt-2"
+              />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">E-mail</span>
+              <input
+                required
+                type="email"
+                value={edicaoUsuario.email}
+                onChange={e=>setEdicaoUsuario({ ...edicaoUsuario,email:e.target.value })}
+                className="cantus-input mt-2"
+              />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Telefone</span>
+              <input
+                value={edicaoUsuario.telefone}
+                onChange={e=>setEdicaoUsuario({ ...edicaoUsuario,telefone:e.target.value })}
+                className="cantus-input mt-2"
+              />
+            </label>
+
+            <label className="block mt-4">
+              <span className="text-sm font-semibold">Nova senha</span>
+              <input
+                type="password"
+                minLength={8}
+                value={edicaoUsuario.senha}
+                onChange={e=>setEdicaoUsuario({ ...edicaoUsuario,senha:e.target.value })}
+                className="cantus-input mt-2"
+                placeholder="Deixe vazio para manter a senha atual"
+              />
+              <div className="mt-2 text-xs cantus-muted">
+                A senha só será alterada se este campo for preenchido.
+              </div>
+            </label>
+
+            <button
+              disabled={salvandoUsuario}
+              className="cantus-primary mt-6 w-full px-6 py-3 disabled:opacity-50"
+            >
+              {salvandoUsuario ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
