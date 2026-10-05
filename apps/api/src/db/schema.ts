@@ -147,3 +147,13 @@ export const missaEscala = pgTable('missa_escala', {
   respondidoEm: timestamp('respondido_em', { withTimezone: true }),
   ...timestamps
 }, t => [primaryKey({ columns: [t.missaId,t.userId] })]);
+
+export const emailEnvios = pgTable('email_envios', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  chave: varchar('chave', { length: 255 }).notNull().unique(),
+  tipo: varchar('tipo', { length: 40 }).notNull(),
+  destinatario: varchar('destinatario', { length: 255 }).notNull(),
+  enviadoEm: timestamp('enviado_em', { withTimezone: true }).defaultNow().notNull()
+}, t => [
+  index('email_envios_tipo_idx').on(t.tipo)
+]);

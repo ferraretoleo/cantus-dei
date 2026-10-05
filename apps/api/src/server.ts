@@ -16,6 +16,7 @@ import { masterRoutes } from './routes/master.js';
 import { paroquiaRoutes } from './routes/paroquias.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { parishBrandRoutes } from './routes/parish-brand.js';
+import { jobRoutes } from './routes/jobs.js';
 
 const app=Fastify({ logger:true });
 
@@ -46,6 +47,7 @@ await app.register(momentoRoutes);
 await app.register(missaRoutes);
 await app.register(publicRoutes);
 await app.register(masterRoutes);
+await app.register(jobRoutes);
 
 app.get('/health',async()=>({
   status:'ok',

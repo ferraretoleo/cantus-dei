@@ -12,13 +12,23 @@ import {
 import { db } from '../db/client.js';
 
 import {
+  emailEnvios,
+  grupos,
   missaEscala,
   missaMusicas,
   missas,
   momentos,
   musicas,
+  paroquias,
   users
 } from '../db/schema.js';
+
+import {
+  emailConfigurado,
+  enviarEmail,
+  escaparHtml,
+  layoutEmail
+} from '../services/email.js';
 
 export async function missaRoutes(app: FastifyInstance) {
   app.get(
@@ -565,9 +575,16 @@ export async function missaRoutes(app: FastifyInstance) {
       const escalaAtual =
         await db
           .select({
-            userId: missaEscala.userId
+            userId: missaEscala.userId,
+            nome: users.nome,
+            email: users.email,
+            instrumentoVoz: missaEscala.instrumentoVoz
           })
           .from(missaEscala)
+          .innerJoin(
+            users,
+            eq(users.id,missaEscala.userId)
+          )
           .where(
             eq(
               missaEscala.missaId,
@@ -660,11 +677,122 @@ export async function missaRoutes(app: FastifyInstance) {
         process.env.PUBLIC_BASE_URL ||
         'http://localhost:5173';
 
+      const publicUrl=
+        `${base}/celebracao/${token}`;
+
+      let emailsEnviados=0;
+      let emailsIgnorados=0;
+      let emailsFalharam=0;
+
+      if (emailConfigurado()) {
+        const [grupoInfo]=await db
+          .select({
+            grupoNome:grupos.nome,
+            paroquiaNome:paroquias.nome
+          })
+          .from(grupos)
+          .innerJoin(
+            paroquias,
+            eq(paroquias.id,grupos.paroquiaId)
+          )
+          .where(eq(grupos.id,grupoId))
+          .limit(1);
+
+        const dt=new Intl.DateTimeFormat('pt-BR',{
+          timeZone:'America/Sao_Paulo',
+          dateStyle:'full',
+          timeStyle:'short'
+        }).format(missa.dataHora);
+
+        for (const musico of escalaAtual) {
+          const chave=
+            `escala:missa:${missaId}:user:${musico.userId}`;
+
+          const [jaFoi]=await db
+            .select({ id:emailEnvios.id })
+            .from(emailEnvios)
+            .where(eq(emailEnvios.chave,chave))
+            .limit(1);
+
+          if (jaFoi) {
+            emailsIgnorados++;
+            continue;
+          }
+
+          const html=layoutEmail({
+            titulo:'Você foi escalado para uma celebração',
+            conteudo:`
+              <p style="line-height:1.7;color:#d8d1c7">
+                Olá, <strong>${escaparHtml(musico.nome)}</strong>.
+                Você foi escalado para servir em uma celebração do Cantus Dei.
+              </p>
+
+              <div style="margin-top:20px;padding:18px;border:1px solid #2c2d31;border-radius:14px;background:#0f1012">
+                <div><strong>Paróquia:</strong> ${escaparHtml(grupoInfo?.paroquiaNome || '')}</div>
+                <div style="margin-top:8px"><strong>Ministério:</strong> ${escaparHtml(grupoInfo?.grupoNome || '')}</div>
+                <div style="margin-top:8px"><strong>Celebração:</strong> ${escaparHtml(missa.tipoCelebracao)}</div>
+                <div style="margin-top:8px"><strong>Data:</strong> ${escaparHtml(dt)}</div>
+                <div style="margin-top:8px"><strong>Local:</strong> ${escaparHtml(missa.local)}</div>
+                ${musico.instrumentoVoz
+                  ? `<div style="margin-top:8px"><strong>Serviço:</strong> ${escaparHtml(musico.instrumentoVoz)}</div>`
+                  : ''}
+              </div>
+
+              <div style="margin-top:24px">
+                <a href="${publicUrl}"
+                   style="display:inline-block;background:#d5ae62;color:#111;padding:13px 20px;border-radius:10px;text-decoration:none;font-weight:700">
+                  Abrir celebração publicada
+                </a>
+              </div>
+            `
+          });
+
+          const texto=
+            `Cantus Dei\n\nOlá, ${musico.nome}.\n`+
+            `Você foi escalado para ${missa.tipoCelebracao}.\n`+
+            `${dt}\n${missa.local}\n\n`+
+            `Acesse: ${publicUrl}`;
+
+          try {
+            await enviarEmail({
+              para:musico.email,
+              assunto:`Cantus Dei · Você foi escalado · ${missa.tipoCelebracao}`,
+              html,
+              texto
+            });
+
+            await db
+              .insert(emailEnvios)
+              .values({
+                chave,
+                tipo:'EMAIL_ESCALA',
+                destinatario:musico.email
+              })
+              .onConflictDoNothing({
+                target:emailEnvios.chave
+              });
+
+            emailsEnviados++;
+          } catch (error) {
+            emailsFalharam++;
+            app.log.error({
+              error,
+              missaId,
+              userId:musico.userId
+            },'Falha ao enviar e-mail de escala');
+          }
+        }
+      }
+
       return {
         token,
-        publicUrl:
-          `${base}/celebracao/${token}`,
-        missa
+        publicUrl,
+        missa,
+        emails:{
+          enviados:emailsEnviados,
+          ignorados:emailsIgnorados,
+          falhas:emailsFalharam
+        }
       };
     }
   );

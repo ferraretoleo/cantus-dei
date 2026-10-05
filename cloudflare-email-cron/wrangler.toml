@@ -1,0 +1,9 @@
+name = "cantus-dei-email-cron"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[triggers]
+crons = ["0 10 * * *"]
+
+[vars]
+API_URL = "https://cantus-dei-api.onrender.com"
