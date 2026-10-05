@@ -362,7 +362,11 @@ export default function Dashboard() {
                         <div className="flex flex-wrap gap-2 mt-3">
                           {item.confirmacao && (
                             <span className="cantus-badge">
-                              Escala: {item.confirmacao}
+                              {item.confirmacao==='PENDENTE'
+                                ? 'ESCALADO'
+                                : item.confirmacao==='CONFIRMADO'
+                                  ? 'ESCALA: CONFIRMADO'
+                                  : 'ESCALA: AUSENTE'}
                             </span>
                           )}
 

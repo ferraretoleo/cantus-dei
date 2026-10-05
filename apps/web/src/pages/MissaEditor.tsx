@@ -25,6 +25,25 @@ type RepertorioItem = {
   observacao:string;
 };
 
+function paraDatetimeLocal(valor:string) {
+  const data=new Date(valor);
+
+  const pad=(n:number)=>
+    String(n).padStart(2,'0');
+
+  return [
+    data.getFullYear(),
+    '-',
+    pad(data.getMonth()+1),
+    '-',
+    pad(data.getDate()),
+    'T',
+    pad(data.getHours()),
+    ':',
+    pad(data.getMinutes())
+  ].join('');
+}
+
 export default function MissaEditor() {
   const {
     slug,
@@ -108,11 +127,9 @@ export default function MissaEditor() {
 
           setForm({
             dataHora:
-              new Date(
+              paraDatetimeLocal(
                 missa.dataHora
-              )
-                .toISOString()
-                .slice(0,16),
+              ),
             local:
               missa.local,
             tipoCelebracao:
