@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { and, asc, eq, isNull } from 'drizzle-orm';
+import { z } from 'zod';
 
 import {
   confirmacaoSchema,
@@ -29,6 +30,10 @@ import {
   escaparHtml,
   layoutEmail
 } from '../services/email.js';
+
+const envioPublicacaoSchema = z.object({
+  email:z.string().email().max(255)
+});
 
 export async function missaRoutes(app: FastifyInstance) {
   app.get(
@@ -796,6 +801,162 @@ export async function missaRoutes(app: FastifyInstance) {
             ? 'PROCESSANDO'
             : 'DESATIVADO'
       };
+    }
+  );
+
+  app.post(
+    '/grupos/:id/missas/:missaId/enviar-email',
+    {
+      preHandler:(req,rep)=>
+        app.requireGroupAccess(
+          req,
+          rep,
+          ['RESPONSAVEL']
+        )
+    },
+    async (request,reply)=>{
+      if (!emailConfigurado()) {
+        return reply.code(503).send({
+          error:'SMTP_NOT_CONFIGURED',
+          message:'O envio de e-mail não está configurado.'
+        });
+      }
+
+      const {
+        id:grupoId,
+        missaId
+      }=request.params as {
+        id:string;
+        missaId:string;
+      };
+
+      const parsed=
+        envioPublicacaoSchema.safeParse(
+          request.body
+        );
+
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error:'VALIDATION_ERROR',
+          message:'Informe um e-mail válido.'
+        });
+      }
+
+      const [missa]=await db
+        .select({
+          id:missas.id,
+          dataHora:missas.dataHora,
+          local:missas.local,
+          tipoCelebracao:missas.tipoCelebracao,
+          status:missas.status,
+          tokenPublico:missas.tokenPublico,
+          grupoNome:grupos.nome,
+          paroquiaNome:paroquias.nome
+        })
+        .from(missas)
+        .innerJoin(
+          grupos,
+          eq(grupos.id,missas.grupoId)
+        )
+        .innerJoin(
+          paroquias,
+          eq(paroquias.id,grupos.paroquiaId)
+        )
+        .where(
+          and(
+            eq(missas.id,missaId),
+            eq(missas.grupoId,grupoId),
+            isNull(missas.deletedAt)
+          )
+        )
+        .limit(1);
+
+      if (!missa) {
+        return reply.code(404).send({
+          error:'NOT_FOUND',
+          message:'Celebração não encontrada.'
+        });
+      }
+
+      if (
+        missa.status!=='PUBLICADA' ||
+        !missa.tokenPublico
+      ) {
+        return reply.code(400).send({
+          error:'NOT_PUBLISHED',
+          message:'A celebração precisa estar publicada antes do envio.'
+        });
+      }
+
+      const base=
+        process.env.PUBLIC_BASE_URL ||
+        'http://localhost:5173';
+
+      const publicUrl=
+        `${base}/celebracao/${missa.tokenPublico}`;
+
+      const dataFormatada=
+        new Intl.DateTimeFormat('pt-BR',{
+          timeZone:'America/Sao_Paulo',
+          dateStyle:'full',
+          timeStyle:'short'
+        }).format(missa.dataHora);
+
+      const html=layoutEmail({
+        titulo:'Celebração publicada',
+        conteudo:`
+          <p style="line-height:1.7;color:#d8d1c7">
+            Uma celebração do Cantus Dei foi compartilhada com você.
+          </p>
+
+          <div style="margin-top:20px;padding:18px;border:1px solid #2c2d31;border-radius:14px;background:#0f1012">
+            <div><strong>Paróquia:</strong> ${escaparHtml(missa.paroquiaNome)}</div>
+            <div style="margin-top:8px"><strong>Ministério:</strong> ${escaparHtml(missa.grupoNome)}</div>
+            <div style="margin-top:8px"><strong>Celebração:</strong> ${escaparHtml(missa.tipoCelebracao)}</div>
+            <div style="margin-top:8px"><strong>Data:</strong> ${escaparHtml(dataFormatada)}</div>
+            <div style="margin-top:8px"><strong>Local:</strong> ${escaparHtml(missa.local)}</div>
+          </div>
+
+          <div style="margin-top:24px">
+            <a href="${publicUrl}"
+               style="display:inline-block;background:#d5ae62;color:#111;padding:13px 20px;border-radius:10px;text-decoration:none;font-weight:700">
+              Abrir celebração
+            </a>
+          </div>
+        `
+      });
+
+      const texto=
+        `Cantus Dei\n\n`+
+        `${missa.tipoCelebracao}\n`+
+        `${missa.paroquiaNome} · ${missa.grupoNome}\n`+
+        `${dataFormatada}\n${missa.local}\n\n`+
+        `Acesse: ${publicUrl}`;
+
+      try {
+        await enviarEmail({
+          para:parsed.data.email,
+          assunto:`Cantus Dei · ${missa.tipoCelebracao}`,
+          html,
+          texto
+        });
+
+        return {
+          ok:true,
+          email:parsed.data.email
+        };
+      } catch (error) {
+        app.log.error({
+          error,
+          missaId,
+          email:parsed.data.email
+        },'Falha no envio manual da publicação');
+
+        return reply.code(502).send({
+          error:'EMAIL_SEND_FAILED',
+          message:'Não foi possível enviar o e-mail. Verifique o SMTP no Render.'
+        });
+      }
     }
   );
 
