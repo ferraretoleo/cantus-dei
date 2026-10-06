@@ -75,6 +75,12 @@ export default function MissaEditor() {
   const [erro,setErro]=useState('');
   const [salvando,setSalvando]=useState(false);
   const [publicando,setPublicando]=useState(false);
+  const [publicacao,setPublicacao]=useState<{
+    publicUrl:string;
+  }|null>(null);
+  const [emailCompartilhar,setEmailCompartilhar]=useState('');
+  const [enviandoCompartilhamento,setEnviandoCompartilhamento]=useState(false);
+  const [mensagemCompartilhamento,setMensagemCompartilhamento]=useState('');
 
   const [novoMomento,setNovoMomento]=useState('');
   const [criandoMomento,setCriandoMomento]=useState(false);
@@ -124,6 +130,18 @@ export default function MissaEditor() {
       )
         .then(data=>{
           const missa=data.missa;
+
+          if (
+            missa.status==='PUBLICADA' &&
+            missa.tokenPublico
+          ) {
+            setPublicacao({
+              publicUrl:
+                `${window.location.origin}/celebracao/${missa.tokenPublico}`
+            });
+          } else {
+            setPublicacao(null);
+          }
 
           setForm({
             dataHora:
@@ -359,6 +377,10 @@ export default function MissaEditor() {
           }
         );
 
+      setPublicacao({
+        publicUrl:data.publicUrl
+      });
+
       localStorage.setItem(
         'cantus_ultima_publicacao',
         JSON.stringify({
@@ -388,6 +410,75 @@ export default function MissaEditor() {
       );
     } finally {
       setPublicando(false);
+    }
+  }
+
+  async function copiarLinkPublicacao() {
+    if (!publicacao?.publicUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(publicacao.publicUrl);
+      setMensagemCompartilhamento('Link copiado.');
+    } catch {
+      setMensagemCompartilhamento('Não foi possível copiar o link.');
+    }
+  }
+
+  async function compartilharPublicacao() {
+    if (!publicacao?.publicUrl) return;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title:'Cantus Dei',
+          text:`${form.tipoCelebracao} · ${form.local}`,
+          url:publicacao.publicUrl
+        });
+        return;
+      } catch {}
+    }
+
+    await copiarLinkPublicacao();
+  }
+
+  async function enviarPublicacaoEmail(e:FormEvent) {
+    e.preventDefault();
+
+    if (
+      !missaId ||
+      nova ||
+      !emailCompartilhar.trim()
+    ) {
+      return;
+    }
+
+    setEnviandoCompartilhamento(true);
+    setMensagemCompartilhamento('');
+    setErro('');
+
+    try {
+      await api(
+        `/grupos/${grupoId}/missas/${missaId}/enviar-email`,
+        {
+          method:'POST',
+          body:JSON.stringify({
+            email:emailCompartilhar.trim()
+          })
+        }
+      );
+
+      setMensagemCompartilhamento(
+        `E-mail enviado para ${emailCompartilhar.trim()}.`
+      );
+      setEmailCompartilhar('');
+    } catch(e) {
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Erro ao enviar publicação por e-mail.'
+      );
+    } finally {
+      setEnviandoCompartilhamento(false);
     }
   }
 
@@ -1255,6 +1346,109 @@ export default function MissaEditor() {
               </div>
 
             </section>
+
+            {publicacao && (
+              <section className="cantus-card mt-6 p-6 sm:p-8">
+                <div className="cantus-eyebrow">
+                  Celebração publicada
+                </div>
+
+                <h2 className="cantus-display mt-3 text-3xl">
+                  Compartilhar publicação
+                </h2>
+
+                <p className="mt-2 text-sm cantus-muted">
+                  Esta celebração já possui um link público.
+                </p>
+
+                <div className="mt-5 rounded-2xl border border-[#d5ae62]/20 bg-[#d5ae62]/[.05] p-4">
+                  <div className="text-xs cantus-muted">
+                    Link público
+                  </div>
+
+                  <div className="mt-2 break-all text-sm cantus-gold">
+                    {publicacao.publicUrl}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <a
+                    href={publicacao.publicUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cantus-primary px-4 py-2.5 text-sm"
+                  >
+                    Abrir publicação
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={copiarLinkPublicacao}
+                    className="cantus-secondary px-4 py-2.5 text-sm"
+                  >
+                    Copiar link
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={compartilharPublicacao}
+                    className="cantus-secondary px-4 py-2.5 text-sm"
+                  >
+                    Compartilhar
+                  </button>
+
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `${form.tipoCelebracao}\n${publicacao.publicUrl}`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cantus-secondary px-4 py-2.5 text-sm"
+                  >
+                    WhatsApp
+                  </a>
+                </div>
+
+                {podeEditar && (
+                  <form
+                    onSubmit={enviarPublicacaoEmail}
+                    className="mt-6 border-t border-white/10 pt-5"
+                  >
+                    <div className="cantus-eyebrow">
+                      Enviar por e-mail
+                    </div>
+
+                    <div className="mt-3 flex flex-col sm:flex-row gap-3">
+                      <input
+                        required
+                        type="email"
+                        value={emailCompartilhar}
+                        onChange={e=>
+                          setEmailCompartilhar(e.target.value)
+                        }
+                        placeholder="destinatario@email.com"
+                        className="cantus-input flex-1"
+                      />
+
+                      <button
+                        disabled={enviandoCompartilhamento}
+                        className="cantus-primary px-5 py-3 disabled:opacity-50"
+                      >
+                        {enviandoCompartilhamento
+                          ? 'Enviando...'
+                          : 'Enviar por e-mail'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {mensagemCompartilhamento && (
+                  <div className="mt-4 text-sm cantus-gold">
+                    {mensagemCompartilhamento}
+                  </div>
+                )}
+              </section>
+            )}
 
             {podeEditar && (
               <section className="cantus-card mt-6 p-6 sm:p-8">
