@@ -1,4 +1,9 @@
-import nodemailer from 'nodemailer';
+from pathlib import Path
+
+p=Path("apps/api/src/services/email.ts")
+t=p.read_text(encoding="utf-8")
+
+new = r"""import nodemailer from 'nodemailer';
 
 function required(name:string) {
   const value=process.env[name]?.trim();
@@ -256,3 +261,7 @@ export function layoutEmail({
     </body>
   </html>`;
 }
+"""
+
+p.write_text(new,encoding="utf-8")
+print("Gmail API configurada como transporte prioritário.")
