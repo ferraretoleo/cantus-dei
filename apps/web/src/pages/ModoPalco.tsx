@@ -33,7 +33,10 @@ type RepertorioItem = {
 
 type PaginaTexto = {
   linhas:string[];
+  quebraManual?:boolean;
 };
+
+const MARCADOR_PALCO = /^\s*\[\[QUEBRA\]\]\s*$/gm;
 
 function modosDisponiveis(
   item:RepertorioItem
@@ -180,32 +183,48 @@ function quebrarEmPaginas(
   texto:string,
   limite:number
 ):PaginaTexto[] {
-  const linhas=
-    texto
-      .replace(/\r\n/g,'\n')
-      .split('\n');
+  const normalizado=texto.replace(/\r\n/g,'\n');
+  const blocos=normalizado.split(MARCADOR_PALCO);
 
-  const paginas:PaginaTexto[]=[];
+  if (blocos.length>1) {
+    const paginasManuais=blocos
+      .map(bloco=>bloco.replace(/^\n+|\n+$/g,''))
+      .filter(bloco=>bloco.trim().length>0)
+      .map(bloco=>({linhas:bloco.split('\n'),quebraManual:true}));
 
-  for (
-    let i=0;
-    i<linhas.length;
-    i+=limite
-  ) {
-    paginas.push({
-      linhas:
-        linhas.slice(
-          i,
-          i+limite
-        )
-    });
+    return paginasManuais.length ? paginasManuais : [{linhas:[]}];
   }
 
-  return (
-    paginas.length
-      ? paginas
-      : [{linhas:[]}]
-  );
+  const linhas=normalizado.split('\n');
+  const paginas:PaginaTexto[]=[];
+  for (let i=0;i<linhas.length;i+=limite) {
+    paginas.push({linhas:linhas.slice(i,i+limite)});
+  }
+  return paginas.length ? paginas : [{linhas:[]}];
+}
+
+function tamanhoFonteAutomatico(
+  linhas:string[],
+  modo:ModoPalcoTipo,
+  altura:number,
+  largura:number
+) {
+  const quantidadeLinhas=Math.max(1,linhas.length);
+  const maiorLinha=Math.max(1,...linhas.map(linha=>linha.length));
+
+  if (modo==='LETRA') {
+    const alturaUtil=Math.max(180,altura-305);
+    const larguraUtil=Math.max(280,Math.min(1500,largura-120));
+    const porAltura=alturaUtil/(quantidadeLinhas*1.24);
+    const porLargura=larguraUtil/(maiorLinha*0.56);
+    return Math.max(18,Math.min(78,Math.floor(Math.min(porAltura,porLargura))));
+  }
+
+  const alturaUtil=Math.max(180,altura-285);
+  const larguraUtil=Math.max(280,Math.min(1152,largura-70));
+  const porAltura=alturaUtil/(quantidadeLinhas*1.42);
+  const porLargura=larguraUtil/(maiorLinha*0.62);
+  return Math.max(12,Math.min(34,Math.floor(Math.min(porAltura,porLargura))));
 }
 
 export default function ModoPalco() {
@@ -521,6 +540,14 @@ export default function ModoPalco() {
     paginas[pagina] ||
     paginas[0];
 
+  const fonteAutomatica=
+    tamanhoFonteAutomatico(
+      paginaAtual?.linhas || [],
+      modo,
+      viewport.height,
+      viewport.width
+    );
+
   const continuacao=
     paginas.length>1 &&
     pagina>0;
@@ -681,7 +708,8 @@ export default function ModoPalco() {
 
             <div className="flex-1 min-h-0 grid place-items-center">
               <div
-                className="w-full whitespace-pre-wrap text-center font-semibold tracking-[.01em] text-[clamp(2rem,4.1vw,4.8rem)] leading-[1.22] drop-shadow-[0_3px_14px_rgba(0,0,0,.75)]"
+                className="w-full whitespace-pre-wrap text-center font-semibold tracking-[.01em] drop-shadow-[0_3px_14px_rgba(0,0,0,.75)]"
+                style={{ fontSize:`${fonteAutomatica}px`, lineHeight:1.22 }}
               >
                 {paginaAtual
                   .linhas
@@ -727,7 +755,10 @@ export default function ModoPalco() {
 
             <div className="flex-1 min-h-0 overflow-hidden pt-4">
               {modo==='CIFRA' && (
-                <pre className="m-0 whitespace-pre font-mono text-[15px] sm:text-xl lg:text-2xl leading-7 sm:leading-[2.125rem] lg:leading-[2.375rem] overflow-hidden">
+                <pre
+                  className="m-0 whitespace-pre font-mono overflow-hidden"
+                  style={{ fontSize:`${fonteAutomatica}px`, lineHeight:1.42 }}
+                >
                   {paginaAtual
                     .linhas
                     .join('\n')}

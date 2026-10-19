@@ -1,9 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import GroupHeader, { getGrupoAtivo } from '../components/GroupHeader';
 import AbcScore from '../components/AbcScore';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+
+const MARCADOR_PALCO = '[[QUEBRA]]';
 
 const exemploAbc = `X:1
 T:Exemplo
@@ -40,6 +42,8 @@ export default function Musicas() {
   const [mostrar, setMostrar] = useState(false);
   const [busca, setBusca] = useState('');
   const [erro, setErro] = useState('');
+  const letraRef = useRef<HTMLTextAreaElement>(null);
+  const cifraRef = useRef<HTMLTextAreaElement>(null);
 
   if (!grupo || grupo.slug !== slug) {
     return <Navigate to="/dashboard" replace />;
@@ -106,6 +110,29 @@ export default function Musicas() {
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
+    });
+  }
+
+  function inserirQuebraPalco(campo: 'letra' | 'cifra') {
+    const textarea = campo === 'letra' ? letraRef.current : cifraRef.current;
+    const valor = form[campo];
+    const inicio = textarea?.selectionStart ?? valor.length;
+    const fim = textarea?.selectionEnd ?? inicio;
+    const antes = valor.slice(0, inicio);
+    const depois = valor.slice(fim);
+    const prefixo = antes.length > 0 && !antes.endsWith('\n') ? '\n' : '';
+    const sufixo = depois.length > 0 && !depois.startsWith('\n') ? '\n' : '';
+    const insercao = `${prefixo}${MARCADOR_PALCO}\n${sufixo}`;
+    const novoValor = antes + insercao + depois;
+
+    setForm({ ...form, [campo]: novoValor });
+
+    requestAnimationFrame(() => {
+      const alvo = campo === 'letra' ? letraRef.current : cifraRef.current;
+      if (!alvo) return;
+      const posicao = antes.length + insercao.length;
+      alvo.focus();
+      alvo.setSelectionRange(posicao, posicao);
     });
   }
 
@@ -321,39 +348,25 @@ export default function Musicas() {
 
             <div className="grid lg:grid-cols-2 gap-4 mt-6">
               <label>
-                <span className="text-sm font-semibold text-[#d9d2c6]">
-                  Letra
-                </span>
-
-                <textarea
-                  rows={10}
-                  value={form.letra}
-                  onChange={e =>
-                    setForm({
-                      ...form,
-                      letra: e.target.value
-                    })
-                  }
-                  className="cantus-input mt-2"
-                />
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-[#d9d2c6]">Letra</span>
+                  <button type="button" onClick={() => inserirQuebraPalco('letra')} className="cantus-secondary px-3 py-1.5 text-xs" title="Nova tela no Modo Palco">
+                    + Quebra de palco
+                  </button>
+                </div>
+                <textarea ref={letraRef} rows={10} value={form.letra} onChange={e => setForm({ ...form, letra: e.target.value })} className="cantus-input mt-2" placeholder={`Use ${MARCADOR_PALCO} para separar estrofes e refrões.`} />
+                <div className="mt-2 text-xs cantus-muted">Posicione o cursor após a estrofe ou refrão e clique em <strong>Quebra de palco</strong>. O marcador <code>{MARCADOR_PALCO}</code> não aparece na apresentação.</div>
               </label>
 
               <label>
-                <span className="text-sm font-semibold text-[#d9d2c6]">
-                  Cifra
-                </span>
-
-                <textarea
-                  rows={10}
-                  value={form.cifra}
-                  onChange={e =>
-                    setForm({
-                      ...form,
-                      cifra: e.target.value
-                    })
-                  }
-                  className="cantus-input mt-2 font-mono text-sm"
-                />
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-[#d9d2c6]">Cifra</span>
+                  <button type="button" onClick={() => inserirQuebraPalco('cifra')} className="cantus-secondary px-3 py-1.5 text-xs" title="Nova tela no Modo Palco">
+                    + Quebra de palco
+                  </button>
+                </div>
+                <textarea ref={cifraRef} rows={10} value={form.cifra} onChange={e => setForm({ ...form, cifra: e.target.value })} className="cantus-input mt-2 font-mono text-sm" placeholder={`Use ${MARCADOR_PALCO} para separar os trechos.`} />
+                <div className="mt-2 text-xs cantus-muted">Cada trecho entre marcadores vira uma tela independente no Modo Palco.</div>
               </label>
             </div>
 
