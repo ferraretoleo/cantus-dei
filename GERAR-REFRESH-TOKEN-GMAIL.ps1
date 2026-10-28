@@ -5,8 +5,8 @@
 # 2. crie OAuth Client ID do tipo "Desktop app"
 # 3. coloque CLIENT_ID e CLIENT_SECRET abaixo temporariamente
 
-$CLIENT_ID = "COLE_SEU_CLIENT_ID"
-$CLIENT_SECRET = "COLE_SEU_CLIENT_SECRET"
+$CLIENT_ID = "476972653866-45hlhs934np6i914qi10oe815e9ifi88.apps.googleusercontent.com"
+$CLIENT_SECRET = "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"
 
 $redirect = "http://localhost"
 $scope = "https://www.googleapis.com/auth/gmail.send"
